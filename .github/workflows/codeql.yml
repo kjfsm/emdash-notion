@@ -1,0 +1,35 @@
+name: CodeQL
+
+# CodeQL は実行時間が長く（2〜5 分）キャッシュも効かないため、PR / push ではなく
+# 毎週 1 回の定期スキャンのみに絞る。手動実行したい場合は workflow_dispatch を使う。
+on:
+  schedule:
+    # 毎週月曜 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"

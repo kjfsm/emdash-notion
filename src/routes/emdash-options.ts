@@ -1,13 +1,14 @@
 import type { PluginContext } from "emdash";
+
 import { loadConfig } from "../config.js";
 
 export interface OptionsRouteContext extends PluginContext {
-	input: unknown;
+  input: unknown;
 }
 
 interface OptionItem {
-	id: string;
-	name: string;
+  id: string;
+  name: string;
 }
 
 /**
@@ -26,20 +27,20 @@ const SAMPLE_SIZE = 20;
  * コレクションは候補に出せない（他の設定済みコレクションの候補が代わりに出る）。
  */
 export async function handleListFields(ctx: OptionsRouteContext): Promise<{ items: OptionItem[] }> {
-	if (!ctx.content?.list) return { items: [] };
-	const config = await loadConfig(ctx);
+  if (!ctx.content?.list) return { items: [] };
+  const config = await loadConfig(ctx);
 
-	const collections = new Set(config.mappings.map((m) => m.collection).filter(Boolean));
-	const names = new Set<string>();
+  const collections = new Set(config.mappings.map((m) => m.collection).filter(Boolean));
+  const names = new Set<string>();
 
-	for (const collection of collections) {
-		try {
-			const result = await ctx.content.list(collection, { limit: SAMPLE_SIZE });
-			for (const item of result.items) for (const key of Object.keys(item.data)) names.add(key);
-		} catch (err) {
-			ctx.log.warn("list-fields: failed to inspect collection", { collection, error: String(err) });
-		}
-	}
+  for (const collection of collections) {
+    try {
+      const result = await ctx.content.list(collection, { limit: SAMPLE_SIZE });
+      for (const item of result.items) for (const key of Object.keys(item.data)) names.add(key);
+    } catch (err) {
+      ctx.log.warn("list-fields: failed to inspect collection", { collection, error: String(err) });
+    }
+  }
 
-	return { items: [...names].sort().map((name) => ({ id: name, name })) };
+  return { items: [...names].sort().map((name) => ({ id: name, name })) };
 }

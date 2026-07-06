@@ -2,8 +2,8 @@ import type { NotionClient } from "./client.js";
 import type { NotionBlock, NotionPage } from "./types.js";
 
 export interface FetchedPage {
-	page: NotionPage;
-	blocks: NotionBlock[];
+  page: NotionPage;
+  blocks: NotionBlock[];
 }
 
 /**
@@ -15,50 +15,55 @@ export interface FetchedPage {
 const DEFAULT_MAX_REQUESTS = 40;
 
 export interface FetchPageOptions {
-	maxRequests?: number;
-	/** 上限到達でツリーを打ち切ったときに呼ばれる（ログ用）。 */
-	onTruncate?: (fetchedRequests: number) => void;
+  maxRequests?: number;
+  /** 上限到達でツリーを打ち切ったときに呼ばれる（ログ用）。 */
+  onTruncate?: (fetchedRequests: number) => void;
 }
 
 /** ページ本体と、子まで再帰取得したブロックツリーを取得する。 */
 export async function fetchPage(
-	client: NotionClient,
-	pageId: string,
-	options: FetchPageOptions = {},
+  client: NotionClient,
+  pageId: string,
+  options: FetchPageOptions = {},
 ): Promise<FetchedPage> {
-	const page = await client.retrievePage(pageId);
-	const budget = { remaining: options.maxRequests ?? DEFAULT_MAX_REQUESTS, truncated: false };
-	const blocks = await fetchBlockTree(client, pageId, budget);
-	if (budget.truncated) options.onTruncate?.((options.maxRequests ?? DEFAULT_MAX_REQUESTS) - budget.remaining);
-	return { page, blocks };
+  const page = await client.retrievePage(pageId);
+  const budget = { remaining: options.maxRequests ?? DEFAULT_MAX_REQUESTS, truncated: false };
+  const blocks = await fetchBlockTree(client, pageId, budget);
+  if (budget.truncated)
+    options.onTruncate?.((options.maxRequests ?? DEFAULT_MAX_REQUESTS) - budget.remaining);
+  return { page, blocks };
 }
 
 interface Budget {
-	remaining: number;
-	truncated: boolean;
+  remaining: number;
+  truncated: boolean;
 }
 
 /** ブロックの子を再帰的にページングして取得する（nhc `sync/fetch-block-tree.ts` の方針を移植）。 */
-async function fetchBlockTree(client: NotionClient, blockId: string, budget: Budget): Promise<NotionBlock[]> {
-	const collected: NotionBlock[] = [];
-	let cursor: string | undefined;
+async function fetchBlockTree(
+  client: NotionClient,
+  blockId: string,
+  budget: Budget,
+): Promise<NotionBlock[]> {
+  const collected: NotionBlock[] = [];
+  let cursor: string | undefined;
 
-	do {
-		if (budget.remaining <= 0) {
-			budget.truncated = true;
-			return collected;
-		}
-		budget.remaining--;
-		const res = await client.listBlockChildren(blockId, cursor);
-		collected.push(...res.results);
-		cursor = res.has_more && res.next_cursor ? res.next_cursor : undefined;
-	} while (cursor);
+  do {
+    if (budget.remaining <= 0) {
+      budget.truncated = true;
+      return collected;
+    }
+    budget.remaining--;
+    const res = await client.listBlockChildren(blockId, cursor);
+    collected.push(...res.results);
+    cursor = res.has_more && res.next_cursor ? res.next_cursor : undefined;
+  } while (cursor);
 
-	for (const block of collected) {
-		if (block.has_children) {
-			block.children = await fetchBlockTree(client, block.id, budget);
-		}
-	}
+  for (const block of collected) {
+    if (block.has_children) {
+      block.children = await fetchBlockTree(client, block.id, budget);
+    }
+  }
 
-	return collected;
+  return collected;
 }

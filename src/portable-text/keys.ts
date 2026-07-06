@@ -6,6 +6,6 @@
  * 生成器を作る。
  */
 export function makeKeyGen(prefix = "k"): () => string {
-	let n = 0;
-	return () => `${prefix}${n++}`;
+  let n = 0;
+  return () => `${prefix}${n++}`;
 }

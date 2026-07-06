@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      # pnpm のバージョンは package.json の packageManager フィールドから自動検出させる
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      # oxlint の typeAware は dist/*.d.ts を要求するため、lint 前に build する
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm format:check
+
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test:coverage
+      # 公開パッケージの型・パッケージ整合性とバンドルサイズを release gate として検査
+      - run: pnpm publint
+      - run: pnpm attw
+      - run: pnpm size
+      - uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "./coverage/lcov.info"
+          fail_ci_if_error: false

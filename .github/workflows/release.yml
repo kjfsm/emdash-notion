@@ -1,0 +1,50 @@
+name: Release Canary
+
+# main への push (= feature PR のマージ) のたびに、Version Packages PR を経由せず
+# pending changeset の内容から snapshot バージョン (0.0.0-canary-<sha>) を組み立てて
+# `canary` dist-tag で npm publish する。
+#
+# - pending changeset を消費・削除しない (次の正式リリース判断のためにそのまま残す)
+# - Version PR も git tag も作らないため RELEASE_PAT は不要 (default token で足りる)
+# - 正式な latest リリースは release-stable.yml (workflow_dispatch) に分離した
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  # release-stable.yml と同じグループ名にして直列化する
+  group: npm-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # snapshot バージョン名の {commit} 解決に必要
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      # publish 時に dist が必要なので build する。typecheck / test は CI で通過済み前提
+      - run: pnpm build
+      # pending changeset が 0 件なら version:snapshot は何もバンプせず、
+      # 後続の release:snapshot も publish 対象なしで no-op 終了する (安全)
+      - run: pnpm version:snapshot
+      - name: canary タグで npm 公開
+        run: pnpm release:snapshot
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # npm provenance を有効化（permissions.id-token: write と連動）
+          NPM_CONFIG_PROVENANCE: "true"

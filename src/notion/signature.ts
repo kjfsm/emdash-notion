@@ -10,10 +10,10 @@
 
 /** タイミング攻撃を避ける定数時間文字列比較（nhc `http/webhook.ts` より移植）。 */
 export function timingSafeEqual(a: string, b: string): boolean {
-	if (a.length !== b.length) return false;
-	let diff = 0;
-	for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-	return diff === 0;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 /**
@@ -21,13 +21,13 @@ export function timingSafeEqual(a: string, b: string): boolean {
  * `expected` が空文字（未設定）の場合は常に false（=検証必須で fail-closed）。
  */
 export function verifyWebhookToken(requestUrl: string, expected: string): boolean {
-	if (expected === "") return false;
-	let token: string | null = null;
-	try {
-		token = new URL(requestUrl).searchParams.get("token");
-	} catch {
-		return false;
-	}
-	if (token === null) return false;
-	return timingSafeEqual(token, expected);
+  if (expected === "") return false;
+  let token: string | null = null;
+  try {
+    token = new URL(requestUrl).searchParams.get("token");
+  } catch {
+    return false;
+  }
+  if (token === null) return false;
+  return timingSafeEqual(token, expected);
 }

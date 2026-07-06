@@ -1,30 +1,86 @@
 {
-	"name": "ndash",
-	"version": "0.1.0",
-	"private": true,
-	"description": "Notion webhook → Portable Text sync plugin for EmDash CMS (native)",
-	"type": "module",
-	"main": "dist/index.js",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		}
-	},
-	"files": ["dist"],
-	"scripts": {
-		"build": "tsc -p tsconfig.build.json",
-		"typecheck": "tsc --noEmit",
-		"test": "vitest run"
-	},
-	"peerDependencies": {
-		"emdash": "*",
-		"@emdash-cms/blocks": "*"
-	},
-	"devDependencies": {
-		"emdash": ">=0.27.0",
-		"@emdash-cms/blocks": ">=0.27.0",
-		"typescript": "^5.9.0",
-		"vitest": "^4.1.0"
-	}
+  "name": "emdash-notion",
+  "version": "0.1.0",
+  "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks — a native EmDash plugin (Notion → EmDash)",
+  "keywords": [
+    "astro",
+    "cms",
+    "emdash",
+    "emdash-plugin",
+    "headless-cms",
+    "notion",
+    "notion-sync",
+    "portable-text"
+  ],
+  "homepage": "https://github.com/kjfsm/ndash-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/kjfsm/ndash-plugin/issues"
+  },
+  "license": "MIT",
+  "author": "kjfsm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kjfsm/ndash-plugin.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text",
+    "lint": "oxlint && eslint .",
+    "lint:fix": "oxlint --fix && eslint . --fix",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "publint": "publint --strict",
+    "attw": "attw --pack . --profile esm-only",
+    "size": "size-limit",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "version:snapshot": "changeset version --snapshot canary",
+    "release": "changeset publish",
+    "release:snapshot": "changeset publish --tag canary --no-git-tag",
+    "release:local": "pnpm publish --no-provenance --no-git-checks"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.3",
+    "@changesets/cli": "^2.31.0",
+    "@emdash-cms/blocks": ">=0.27.0",
+    "@size-limit/preset-small-lib": "^12.1.0",
+    "@typescript-eslint/parser": "^8.62.1",
+    "@vitest/coverage-v8": "^4.1.0",
+    "emdash": ">=0.27.0",
+    "eslint": "^10.6.0",
+    "eslint-plugin-oxlint": "^1.72.0",
+    "oxfmt": "^0.57.0",
+    "oxlint": "^1.72.0",
+    "oxlint-tsgolint": "^0.24.0",
+    "publint": "^0.3.21",
+    "size-limit": "^12.1.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  },
+  "peerDependencies": {
+    "@emdash-cms/blocks": ">=0.27.0",
+    "emdash": ">=0.27.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0"
 }

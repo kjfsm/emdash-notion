@@ -1,0 +1,39 @@
+name: Release Dry Run
+
+# changesets/action が作る Version Packages PR (ブランチ名 `changeset-release/<base>`) に対して
+# `pnpm publish --dry-run` を実行し、バージョン衝突 / npm 認証 / provenance OIDC 署名の可否 /
+# tarball の dist 同梱を publish 直前に検証する。
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # publishConfig.provenance: true のパッケージが OIDC で provenance 署名の可否を
+  # 検証するため、release.yml と同じく id-token 権限を付与する
+  id-token: write
+
+jobs:
+  dry-run:
+    if: startsWith(github.head_ref, 'changeset-release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      # dry-run publish 前に dist を用意する
+      - run: pnpm build
+      # バージョン衝突・provenance OIDC・認証を検知
+      - run: pnpm publish --dry-run --no-git-checks
