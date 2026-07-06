@@ -59,6 +59,18 @@ export interface NotionProperty {
 	[key: string]: unknown;
 }
 
+export interface NotionDatabaseTitleFragment {
+	plain_text: string;
+}
+
+/** データベース（data source）のスキーマ。ndash が読む部分のみ。 */
+export interface NotionDatabase {
+	object: "database";
+	id: string;
+	title: NotionDatabaseTitleFragment[];
+	properties: Record<string, NotionProperty>;
+}
+
 export interface NotionListResponse<T> {
 	object: "list";
 	results: T[];

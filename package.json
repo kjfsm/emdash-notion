@@ -18,10 +18,12 @@
 		"test": "vitest run"
 	},
 	"peerDependencies": {
-		"emdash": "*"
+		"emdash": "*",
+		"@emdash-cms/blocks": "*"
 	},
 	"devDependencies": {
 		"emdash": ">=0.27.0",
+		"@emdash-cms/blocks": ">=0.27.0",
 		"typescript": "^5.9.0",
 		"vitest": "^4.1.0"
 	}

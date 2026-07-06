@@ -49,7 +49,11 @@ describe("handleWebhook", () => {
 			children: { p1: { results: [] } },
 		});
 		const t = createTestContext({
-			kv: { "settings:webhookToken": "right", "settings:notionToken": "tok", "settings:collection": "posts" },
+			kv: {
+				"settings:webhookToken": "right",
+				"settings:notionToken": "tok",
+				"settings:mappings": [{ collection: "posts", databaseId: "db1" }],
+			},
 			fetch,
 		});
 		const routeCtx = withRoute<WebhookRouteContext>(

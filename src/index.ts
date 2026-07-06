@@ -1,5 +1,8 @@
 import { definePlugin } from "emdash";
 import type { PluginDescriptor } from "emdash";
+import { handleAdmin } from "./routes/admin.js";
+import { handleListFields } from "./routes/emdash-options.js";
+import { handleListDatabases, handleListProperties } from "./routes/notion-options.js";
 import { handleWebhook } from "./routes/webhook.js";
 
 export interface NdashOptions {
@@ -26,9 +29,9 @@ export function ndashPlugin(options: NdashOptions = {}): PluginDescriptor<NdashO
  * ランタイム本体。Notion Webhook を受け取り、ページを Portable Text に変換して
  * emdash のコンテンツへ保存する（Notion → emdash 一方向。逆方向は未実装）。
  *
- * 設定（Notion トークン・Webhook 検証トークン・対象コレクション等）は
- * `admin.settingsSchema` の自動生成フォームで入力し、`ctx.kv` の `settings:` 名前空間へ
- * 自動保存される（`src/config.ts` が同じキー名で読み出す）。
+ * 設定（Notion トークン・Webhook 検証トークン・対象コレクション等）は管理画面の
+ * Block Kit 設定ページ（`routes/admin.ts`）から入力し、`ctx.kv` の `settings:` 名前空間へ
+ * 保存される（`src/config.ts` が同じキー名で読み出す）。
  */
 export function createPlugin(_options: NdashOptions = {}) {
 	return definePlugin({
@@ -43,25 +46,29 @@ export function createPlugin(_options: NdashOptions = {}) {
 			syncMap: { indexes: ["emdashId", "updatedAt"] },
 		},
 
+		// WHY: emdash@0.27.0 は admin.settingsSchema だけでは設定 UI を自動生成しない
+		// （マニフェストに載るだけで実行時に消費されない）。サイドバー/歯車アイコンは
+		// admin.pages の有無で決まるため、Block Kit ページを自前で登録する（routes/admin.ts）。
 		admin: {
-			settingsSchema: {
-				notionToken: { type: "secret", label: "Notion Integration Token" },
-				webhookToken: {
-					type: "secret",
-					label: "Webhook URL Token",
-					description: "Notion 購読 URL の ?token= に載せる共有シークレット",
-				},
-				databaseId: { type: "string", label: "Notion Database ID (optional)" },
-				collection: { type: "string", label: "Target Collection Slug" },
-				titleField: { type: "string", label: "Title Field Slug", default: "title" },
-				bodyField: { type: "string", label: "Body (Portable Text) Field Slug", default: "body" },
-			},
+			pages: [{ path: "/", label: "ndash", icon: "settings" }],
 		},
 
 		routes: {
 			webhook: {
 				public: true,
 				handler: handleWebhook,
+			},
+			admin: {
+				handler: handleAdmin,
+			},
+			"list-databases": {
+				handler: handleListDatabases,
+			},
+			"list-properties": {
+				handler: handleListProperties,
+			},
+			"list-fields": {
+				handler: handleListFields,
 			},
 		},
 	});

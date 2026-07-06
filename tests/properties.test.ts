@@ -23,12 +23,14 @@ function page(properties: NotionPage["properties"]): NotionPage {
 	};
 }
 
+const opts = { authorProperty: "著者", slugProperty: "slug" };
+
 describe("mapProperties", () => {
 	it("title プロパティからタイトルを連結して取り出す", () => {
 		const p = page({
 			Name: { id: "t", type: "title", title: [rt("Hello "), rt("World")] },
 		});
-		expect(mapProperties(p).title).toBe("Hello World");
+		expect(mapProperties(p, opts).title).toBe("Hello World");
 	});
 
 	it("status が公開値なら published=true", () => {
@@ -36,7 +38,7 @@ describe("mapProperties", () => {
 			Name: { id: "t", type: "title", title: [rt("x")] },
 			Status: { id: "s", type: "status", status: { name: "Published" } },
 		});
-		expect(mapProperties(p).published).toBe(true);
+		expect(mapProperties(p, opts).published).toBe(true);
 	});
 
 	it("status が非公開値なら published=false", () => {
@@ -44,10 +46,29 @@ describe("mapProperties", () => {
 			Name: { id: "t", type: "title", title: [rt("x")] },
 			Status: { id: "s", type: "status", status: { name: "Draft" } },
 		});
-		expect(mapProperties(p).published).toBe(false);
+		expect(mapProperties(p, opts).published).toBe(false);
 	});
 
 	it("title が無ければ空文字", () => {
-		expect(mapProperties(page({})).title).toBe("");
+		expect(mapProperties(page({}), opts).title).toBe("");
+	});
+
+	it("設定したプロパティ名で著者・slug を rich_text から取り出す", () => {
+		const p = page({
+			名前: { id: "t", type: "title", title: [rt("テスト")] },
+			slug: { id: "s", type: "rich_text", rich_text: [rt("test")] },
+			著者: { id: "a", type: "rich_text", rich_text: [rt("ふすま")] },
+		});
+		const mapped = mapProperties(p, opts);
+		expect(mapped.title).toBe("テスト");
+		expect(mapped.slug).toBe("test");
+		expect(mapped.author).toBe("ふすま");
+	});
+
+	it("該当プロパティが無ければ著者・slug は空文字", () => {
+		const p = page({ Name: { id: "t", type: "title", title: [rt("x")] } });
+		const mapped = mapProperties(p, opts);
+		expect(mapped.author).toBe("");
+		expect(mapped.slug).toBe("");
 	});
 });

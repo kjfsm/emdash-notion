@@ -36,7 +36,10 @@ function paragraph(id: string, text: string) {
 	};
 }
 
-const kv = { "settings:notionToken": "secret_token", "settings:collection": "posts" };
+const kv = {
+	"settings:notionToken": "secret_token",
+	"settings:mappings": [{ collection: "posts", databaseId: "db1" }],
+};
 
 describe("ingestPage", () => {
 	it("未設定なら skipped", async () => {
@@ -96,12 +99,53 @@ describe("ingestPage", () => {
 		expect(t.updated[0]!.data.title).toBe("My Page");
 	});
 
-	it("databaseId 設定時、別 DB のページは skipped", async () => {
+	it("コレクションに authorField が無い場合、そのフィールドだけ外して再試行する", async () => {
+		function notionPageWithAuthor() {
+			const p = notionPage("page1", "2026-02-01T00:00:00.000Z");
+			p.properties = {
+				...p.properties,
+				著者: {
+					id: "a",
+					type: "rich_text",
+					rich_text: [{ type: "text", plain_text: "ふすま", href: null, annotations: { bold: false, italic: false, strikethrough: false, underline: false, code: false, color: "default" } }],
+				},
+			} as typeof p.properties;
+			return p;
+		}
+		const fetch = makeNotionHttp({
+			pages: { page1: notionPageWithAuthor() },
+			children: { page1: { results: [] } },
+		});
+		let attempts = 0;
+		const t = createTestContext({
+			kv,
+			fetch,
+			onCreate: (_collection, data) => {
+				attempts++;
+				if (attempts === 1 && "author" in data) {
+					throw new Error("D1_ERROR: table ec_posts has no column named author: SQLITE_ERROR");
+				}
+				return { id: "content_1" };
+			},
+		});
+
+		const res = await ingestPage(t.ctx, "page1");
+		expect(res.status).toBe("created");
+		expect(attempts).toBe(2);
+		expect(t.created).toHaveLength(1);
+		expect(t.created[0]!.data.author).toBeUndefined();
+		expect(t.created[0]!.data.title).toBe("My Page");
+	});
+
+	it("マッピングされていない DB のページは skipped", async () => {
 		const fetch = makeNotionHttp({
 			pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
 			children: { page1: { results: [] } },
 		});
-		const t = createTestContext({ kv: { ...kv, "settings:databaseId": "other-db" }, fetch });
+		const t = createTestContext({
+			kv: { "settings:notionToken": "secret_token", "settings:mappings": [{ collection: "posts", databaseId: "other-db" }] },
+			fetch,
+		});
 		const res = await ingestPage(t.ctx, "page1");
 		expect(res.status).toBe("skipped");
 	});
