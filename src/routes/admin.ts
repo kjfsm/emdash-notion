@@ -17,6 +17,7 @@ import {
   DEFAULT_TITLE_FIELD,
   loadConfig,
   type NotionMapping,
+  type OptionItem,
 } from "../config.js";
 import {
   getMessages,
@@ -27,6 +28,7 @@ import {
   resolveLocale,
 } from "../i18n/index.js";
 import { type BulkSyncResult, syncAll } from "../sync/bulk.js";
+import { fetchNotionStructure, type NotionStructure } from "./notion-options.js";
 
 /**
  * `admin.settingsSchema` は emdash@0.27.0 では実行時 UI を自動生成しない
@@ -40,6 +42,7 @@ export interface AdminRouteContext extends PluginContext {
 }
 
 const SAVE_CONNECTION_ACTION_ID = "save_connection";
+const FETCH_STRUCTURE_ACTION_ID = "fetch_structure";
 const MANUAL_SYNC_ACTION_ID = "manual_sync";
 const SAVE_MAPPING_PREFIX = "save_mapping_";
 const DELETE_MAPPING_PREFIX = "delete_mapping_";
@@ -85,11 +88,20 @@ function connectionFormBlock(
   });
 }
 
+/** `OptionItem[]` を `elements.select()` の options 形式へ変換する。 */
+function toSelectOptions(items: OptionItem[]): Array<{ label: string; value: string }> {
+  return items.map((item) => ({ label: item.name, value: item.id }));
+}
+
 /**
  * 1 つの対応関係の入力フィールド。
  * WHY: `repeater` Block Kit 要素は emdash@0.27.0 の管理画面バンドルで描画されない不具合が
  * あったため、既存動作確認済みの `form`/`select`/`text_input` のみで組む（対応ごとに独立した
  * form を並べ、末尾に空欄の追加用 form を 1 つ足す構成）。
+ *
+ * Notion 側（databaseId/authorProperty/slugProperty）の選択肢は「Notionの構造を取得する」
+ * ボタン押下時に取得して kv に保存した静的な候補（`config.notionDatabases`/`notionProperties`）
+ * を使う。vendor 側の `optionsRoute` 自動 fetch は失敗が画面に見えないため使わない。
  *
  * emdash 側フィールド（title/body/author/slug）は本来 select にできない（プラグインにスキーマ
  * 照会 API が無い）が、`list-fields` ルートが「設定済みの対応関係が指すコレクションの既存
@@ -97,31 +109,32 @@ function connectionFormBlock(
  * そのコレクションにまだコンテンツが無い場合は候補が出ないため、自由入力の余地を残したい
  * ときは combobox 的な代替が無く、select の空欄選択（同期しない/未指定）で妥協する。
  */
-function mappingFields(mapping: Partial<NotionMapping>, m: Messages) {
+function mappingFields(
+  mapping: Partial<NotionMapping>,
+  m: Messages,
+  notionDatabases: OptionItem[],
+  notionProperties: OptionItem[],
+) {
   return [
     elements.textInput("collection", m.collectionLabel, {
       placeholder: m.collectionPlaceholder,
       initialValue: mapping.collection || undefined,
     }),
-    dynamicSelect("databaseId", m.databaseLabel, "list-databases", mapping.databaseId || undefined),
-    dynamicSelect(
-      "authorProperty",
-      m.authorPropertyLabel,
-      "list-properties",
-      mapping.authorProperty || DEFAULT_AUTHOR_PROPERTY,
-    ),
+    elements.select("databaseId", m.databaseLabel, toSelectOptions(notionDatabases), {
+      initialValue: mapping.databaseId || undefined,
+    }),
+    elements.select("authorProperty", m.authorPropertyLabel, toSelectOptions(notionProperties), {
+      initialValue: mapping.authorProperty || DEFAULT_AUTHOR_PROPERTY,
+    }),
     dynamicSelect(
       "authorField",
       m.authorFieldLabel,
       "list-fields",
       mapping.authorField ?? DEFAULT_AUTHOR_FIELD,
     ),
-    dynamicSelect(
-      "slugProperty",
-      m.slugPropertyLabel,
-      "list-properties",
-      mapping.slugProperty || DEFAULT_SLUG_PROPERTY,
-    ),
+    elements.select("slugProperty", m.slugPropertyLabel, toSelectOptions(notionProperties), {
+      initialValue: mapping.slugProperty || DEFAULT_SLUG_PROPERTY,
+    }),
     dynamicSelect(
       "slugField",
       m.slugFieldLabel,
@@ -148,11 +161,13 @@ function mappingFormBlocks(
   mapping: Partial<NotionMapping> | undefined,
   key: number | typeof NEW_MAPPING_KEY,
   m: Messages,
+  notionDatabases: OptionItem[],
+  notionProperties: OptionItem[],
 ): Block[] {
   const result: Block[] = [
     blocks.form({
       blockId: `mapping-${key}`,
-      fields: mappingFields(mapping ?? {}, m),
+      fields: mappingFields(mapping ?? {}, m, notionDatabases, notionProperties),
       submit: {
         label: key === NEW_MAPPING_KEY ? m.addMapping : m.saveMapping,
         actionId: `${SAVE_MAPPING_PREFIX}${key}`,
@@ -171,17 +186,26 @@ function mappingFormBlocks(
   return result;
 }
 
-function mappingsSection(mappings: NotionMapping[], m: Messages): Block[] {
+function mappingsSection(
+  mappings: NotionMapping[],
+  m: Messages,
+  notionDatabases: OptionItem[],
+  notionProperties: OptionItem[],
+): Block[] {
   const result: Block[] = [blocks.header(m.mappingsHeader), blocks.context(m.mappingsHelp)];
+
+  if (notionDatabases.length === 0) result.push(blocks.context(m.structureNotFetchedHint));
 
   mappings.forEach((mapping, index) => {
     result.push(blocks.context(m.mappingLabel(index, mapping.collection)));
-    result.push(...mappingFormBlocks(mapping, index, m));
+    result.push(...mappingFormBlocks(mapping, index, m, notionDatabases, notionProperties));
     result.push(blocks.divider());
   });
 
   result.push(blocks.context(m.addNewMapping));
-  result.push(...mappingFormBlocks(undefined, NEW_MAPPING_KEY, m));
+  result.push(
+    ...mappingFormBlocks(undefined, NEW_MAPPING_KEY, m, notionDatabases, notionProperties),
+  );
 
   return result;
 }
@@ -203,11 +227,30 @@ function syncResultBanner(result: BulkSyncResult, m: Messages): Block {
   });
 }
 
+/** 「Notionの構造を取得する」の結果を banner にする。失敗を必ず画面に見える形で出す。 */
+function structureFetchBanner(structure: NotionStructure, m: Messages): Block {
+  if (structure.errors.length === 0) {
+    return blocks.banner({
+      title: m.structureFetchedTitle,
+      description: m.structureFetchedBody(structure.databases.length, structure.properties.length),
+      variant: "default",
+    });
+  }
+  return blocks.banner({
+    title: m.structureFetchPartialTitle,
+    description:
+      m.structureFetchedBody(structure.databases.length, structure.properties.length) +
+      m.structureFetchPartialSuffix(structure.errors.slice(0, 3)),
+    variant: structure.databases.length === 0 ? "error" : "alert",
+  });
+}
+
 async function buildBlocks(
   ctx: PluginContext,
   m: Messages,
   locale: Locale,
   syncResult?: BulkSyncResult,
+  structureBanner?: Block,
 ): Promise<Block[]> {
   const config = await loadConfig(ctx);
 
@@ -215,8 +258,10 @@ async function buildBlocks(
     blocks.header(m.pageTitle),
     blocks.context(m.pageIntro),
     connectionFormBlock(config, m, locale),
+    blocks.actions([elements.button(FETCH_STRUCTURE_ACTION_ID, m.fetchStructureButton)]),
+    blocks.context(m.fetchStructureHelp),
     blocks.divider(),
-    ...mappingsSection(config.mappings, m),
+    ...mappingsSection(config.mappings, m, config.notionDatabases, config.notionProperties),
     blocks.divider(),
     blocks.section(m.manualSyncSection, {
       accessory: elements.button(MANUAL_SYNC_ACTION_ID, m.manualSync, { style: "primary" }),
@@ -224,6 +269,7 @@ async function buildBlocks(
   ];
 
   if (syncResult) result.push(syncResultBanner(syncResult, m));
+  if (structureBanner) result.push(structureBanner);
 
   return result;
 }
@@ -244,8 +290,9 @@ function sanitizeMapping(raw: Record<string, unknown>): NotionMapping {
 
 /**
  * Block Kit の設定ページ。
- * - `connection` フォーム: 表示言語とトークンを保存（保存後、`list-databases`/`list-properties`/`list-fields`
- *   の optionsRoute が最新の設定で Notion/emdash を検索し、下のセレクトを埋める）
+ * - `connection` フォーム: 表示言語とトークンを保存
+ * - Notionの構造を取得するボタン: Notion 側のデータベース/プロパティを取得して kv に保存し、
+ *   `databaseId`/`authorProperty`/`slugProperty` の選択肢を更新する（結果は banner で必ず表示）
  * - 対応ごとの `mapping-<index>` フォーム: 既存の対応関係を編集・削除
  * - `mapping-new` フォーム: 新しい対応関係を追加
  * - 手動取得ボタン: 保存済みの全対応関係を一括同期
@@ -314,6 +361,37 @@ export async function handleAdmin(ctx: AdminRouteContext): Promise<BlockResponse
     return {
       blocks: await buildBlocks(ctx, m, locale),
       toast: { message: m.mappingDeleted, type: "success" },
+    };
+  }
+
+  if (interaction?.type === "block_action" && interaction.action_id === FETCH_STRUCTURE_ACTION_ID) {
+    const config = await loadConfig(ctx);
+    if (!config.notionToken) {
+      return {
+        blocks: await buildBlocks(
+          ctx,
+          m,
+          locale,
+          undefined,
+          blocks.banner({
+            title: m.structureFetchNoTokenTitle,
+            description: m.structureFetchNoTokenBody,
+            variant: "error",
+          }),
+        ),
+        toast: { message: m.structureFetchNoTokenTitle, type: "error" },
+      };
+    }
+
+    const structure = await fetchNotionStructure(ctx);
+    await ctx.kv.set(CONFIG_KEYS.notionDatabases, structure.databases);
+    await ctx.kv.set(CONFIG_KEYS.notionProperties, structure.properties);
+    return {
+      blocks: await buildBlocks(ctx, m, locale, undefined, structureFetchBanner(structure, m)),
+      toast:
+        structure.errors.length > 0
+          ? { message: m.structureFetchPartialTitle, type: "error" }
+          : { message: m.structureFetchedToast, type: "success" },
     };
   }
 

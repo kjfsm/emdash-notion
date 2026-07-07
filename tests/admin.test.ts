@@ -117,4 +117,114 @@ describe("handleAdmin", () => {
     const types = JSON.stringify(res.blocks);
     expect(types).not.toContain('"repeater"');
   });
+
+  it("fetch_structure: トークン未保存ならエラー banner を返し kv は変化しない", async () => {
+    const t = createTestContext({ kv: {} });
+    const routeCtx = withRoute<AdminRouteContext>(
+      t.ctx,
+      { type: "block_action", action_id: "fetch_structure" },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(routeCtx);
+    expect(res.toast?.type).toBe("error");
+    expect(JSON.stringify(res.blocks)).toContain('"variant":"error"');
+    expect(t.kv.get("settings:notionDatabases")).toBeUndefined();
+  });
+
+  it("fetch_structure: 成功時に notionDatabases/notionProperties を保存し、選択肢に反映する", async () => {
+    const t = createTestContext({
+      kv: { "settings:notionToken": "secret_x" },
+      fetch: async (url) => {
+        const u = new URL(url);
+        if (u.pathname === "/v1/search") {
+          return new Response(
+            JSON.stringify({
+              object: "list",
+              results: [{ object: "database", id: "db1", title: [{ plain_text: "DB One" }] }],
+              next_cursor: null,
+              has_more: false,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (u.pathname === "/v1/databases/db1") {
+          return new Response(
+            JSON.stringify({
+              object: "database",
+              id: "db1",
+              title: [{ plain_text: "DB One" }],
+              properties: { Author: { id: "a", type: "rich_text" } },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        return new Response(JSON.stringify({ error: "unhandled" }), { status: 500 });
+      },
+    });
+
+    const routeCtx = withRoute<AdminRouteContext>(
+      t.ctx,
+      { type: "block_action", action_id: "fetch_structure" },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(routeCtx);
+
+    expect(res.toast?.type).toBe("success");
+    expect(t.kv.get("settings:notionDatabases")).toEqual([{ id: "db1", name: "DB One (db1)" }]);
+    expect(t.kv.get("settings:notionProperties")).toEqual([{ id: "Author", name: "Author" }]);
+    const blocksJson = JSON.stringify(res.blocks);
+    expect(blocksJson).toContain("DB One (db1)");
+    expect(blocksJson).not.toContain('"structureNotFetchedHint"');
+  });
+
+  it("fetch_structure: 一部データベースが失敗すると banner にエラーが含まれ、成功分は反映される", async () => {
+    const t = createTestContext({
+      kv: { "settings:notionToken": "secret_x" },
+      fetch: async (url) => {
+        const u = new URL(url);
+        if (u.pathname === "/v1/search") {
+          return new Response(
+            JSON.stringify({
+              object: "list",
+              results: [
+                { object: "database", id: "db1", title: [{ plain_text: "Broken DB" }] },
+                { object: "database", id: "db2", title: [{ plain_text: "Good DB" }] },
+              ],
+              next_cursor: null,
+              has_more: false,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (u.pathname === "/v1/databases/db1") {
+          return new Response(JSON.stringify({ message: "forbidden" }), { status: 403 });
+        }
+        if (u.pathname === "/v1/databases/db2") {
+          return new Response(
+            JSON.stringify({
+              object: "database",
+              id: "db2",
+              title: [{ plain_text: "Good DB" }],
+              properties: { Slug: { id: "s", type: "rich_text" } },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        return new Response(JSON.stringify({ error: "unhandled" }), { status: 500 });
+      },
+    });
+
+    const routeCtx = withRoute<AdminRouteContext>(
+      t.ctx,
+      { type: "block_action", action_id: "fetch_structure" },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(routeCtx);
+
+    expect(res.toast?.type).toBe("error");
+    expect(t.kv.get("settings:notionProperties")).toEqual([{ id: "Slug", name: "Slug" }]);
+    const blocksJson = JSON.stringify(res.blocks);
+    expect(blocksJson).toContain("Broken DB (db1)");
+    expect(blocksJson).toContain('"variant":"alert"');
+  });
 });
