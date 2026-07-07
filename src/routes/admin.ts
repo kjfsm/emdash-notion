@@ -220,9 +220,10 @@ async function buildBlocks(
     result.push(
       blocks.banner({
         title: m.verificationReceivedTitle,
-        description: m.verificationReceivedDescription(verificationToken),
+        description: m.verificationReceivedDescription,
         variant: "alert",
       }),
+      blocks.code({ code: verificationToken }),
     );
   }
 

@@ -27,7 +27,7 @@ export interface Messages {
   saveConnection: string;
 
   verificationReceivedTitle: string;
-  verificationReceivedDescription: (token: string) => string;
+  verificationReceivedDescription: string;
 
   collectionLabel: string;
   collectionPlaceholder: string;
@@ -80,8 +80,8 @@ const en: Messages = {
   saveConnection: "Save tokens",
 
   verificationReceivedTitle: "Notion verification token received",
-  verificationReceivedDescription: (token) =>
-    `Paste this value into Notion's webhook verification field, then save: ${token}`,
+  verificationReceivedDescription:
+    "Copy the value below and paste it into Notion's webhook verification field.",
 
   collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",
@@ -139,8 +139,8 @@ const ja: Messages = {
   saveConnection: "トークンを保存",
 
   verificationReceivedTitle: "Notion の検証トークンを受信しました",
-  verificationReceivedDescription: (token) =>
-    `この値を Notion の Webhook 検証欄に貼り付けて保存してください: ${token}`,
+  verificationReceivedDescription:
+    "下の値をコピーして、Notion の Webhook 検証欄に貼り付けてください。",
 
   collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",

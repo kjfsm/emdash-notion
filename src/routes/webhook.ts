@@ -38,7 +38,7 @@ export async function handleWebhook(ctx: WebhookRouteContext): Promise<unknown> 
   // 購読作成時のハンドシェイク: verification_token を保存してそのままエコー返しする。
   if (typeof payload.verification_token === "string") {
     await ctx.kv.set(STATE_KEYS.verificationToken, payload.verification_token);
-    ctx.log.info("notion webhook verification handshake received");
+    ctx.log.info(`notion webhook verification handshake received: ${payload.verification_token}`);
     return { verification_token: payload.verification_token };
   }
 
