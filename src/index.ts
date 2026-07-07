@@ -21,7 +21,7 @@ export function ndashPlugin(options: NdashOptions = {}): PluginDescriptor<NdashO
     id: "ndash",
     version: "0.1.0",
     format: "native",
-    entrypoint: "ndash",
+    entrypoint: "emdash-notion",
     options,
   };
 }
