@@ -12,15 +12,15 @@
     "notion-sync",
     "portable-text"
   ],
-  "homepage": "https://github.com/kjfsm/ndash-plugin#readme",
+  "homepage": "https://github.com/kjfsm/emdash-notion#readme",
   "bugs": {
-    "url": "https://github.com/kjfsm/ndash-plugin/issues"
+    "url": "https://github.com/kjfsm/emdash-notion/issues"
   },
   "license": "MIT",
   "author": "kjfsm",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kjfsm/ndash-plugin.git"
+    "url": "git+https://github.com/kjfsm/emdash-notion.git"
   },
   "files": [
     "dist"
