@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { timingSafeEqual, verifyWebhookToken } from "../src/notion/signature.js";
+import {
+  generateWebhookToken,
+  timingSafeEqual,
+  verifyWebhookToken,
+} from "../src/notion/signature.js";
 
 describe("timingSafeEqual", () => {
   it("等しい文字列で true", () => {
@@ -26,5 +30,15 @@ describe("verifyWebhookToken", () => {
   });
   it("期待値が空（未設定）なら常に false（fail-closed）", () => {
     expect(verifyWebhookToken("https://x.com/webhook?token=abc", "")).toBe(false);
+  });
+});
+
+describe("generateWebhookToken", () => {
+  it("64文字の16進文字列を返す", () => {
+    const token = generateWebhookToken();
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
+  });
+  it("呼ぶたびに異なる値を返す", () => {
+    expect(generateWebhookToken()).not.toBe(generateWebhookToken());
   });
 });

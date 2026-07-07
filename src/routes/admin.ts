@@ -27,6 +27,7 @@ import {
   type Messages,
   resolveLocale,
 } from "../i18n/index.js";
+import { generateWebhookToken } from "../notion/signature.js";
 import { type BulkSyncResult, syncAll } from "../sync/bulk.js";
 import { fetchNotionStructure, type NotionStructure } from "./notion-options.js";
 
@@ -42,11 +43,17 @@ export interface AdminRouteContext extends PluginContext {
 }
 
 const SAVE_CONNECTION_ACTION_ID = "save_connection";
+const GENERATE_TOKEN_ACTION_ID = "generate_webhook_token";
 const FETCH_STRUCTURE_ACTION_ID = "fetch_structure";
 const MANUAL_SYNC_ACTION_ID = "manual_sync";
 const SAVE_MAPPING_PREFIX = "save_mapping_";
 const DELETE_MAPPING_PREFIX = "delete_mapping_";
 const NEW_MAPPING_KEY = "new";
+
+/** `src/index.ts` の `id: "ndash"` と同じ値。webhook ルートの絶対 URL を組み立てる。 */
+function buildWebhookUrl(ctx: PluginContext, token: string): string {
+  return `${ctx.url("/_emdash/api/plugins/ndash/webhook")}?token=${encodeURIComponent(token)}`;
+}
 
 /** `elements.select()` は `optionsRoute` を受け付けないため、戻り値にスプレッドで追加する。 */
 function dynamicSelect(
@@ -86,6 +93,14 @@ function connectionFormBlock(
     ],
     submit: { label: m.saveConnection, actionId: SAVE_CONNECTION_ACTION_ID },
   });
+}
+
+/** 生成直後だけ表示する、Webhook URL 案内の banner + context。 */
+function tokenGeneratedBlocks(webhookUrl: string, m: Messages): Block[] {
+  return [
+    blocks.banner({ title: m.tokenGeneratedTitle, description: webhookUrl, variant: "default" }),
+    blocks.context(m.tokenGeneratedInstruction),
+  ];
 }
 
 /** `OptionItem[]` を `elements.select()` の options 形式へ変換する。 */
@@ -251,6 +266,7 @@ async function buildBlocks(
   locale: Locale,
   syncResult?: BulkSyncResult,
   structureBanner?: Block,
+  tokenGeneratedUrl?: string,
 ): Promise<Block[]> {
   const config = await loadConfig(ctx);
 
@@ -258,6 +274,10 @@ async function buildBlocks(
     blocks.header(m.pageTitle),
     blocks.context(m.pageIntro),
     connectionFormBlock(config, m, locale),
+    blocks.context(m.webhookTokenHelp),
+    blocks.actions([elements.button(GENERATE_TOKEN_ACTION_ID, m.generateTokenButton)]),
+    blocks.context(m.generateTokenHelp),
+    ...(tokenGeneratedUrl ? tokenGeneratedBlocks(tokenGeneratedUrl, m) : []),
     blocks.actions([elements.button(FETCH_STRUCTURE_ACTION_ID, m.fetchStructureButton)]),
     blocks.context(m.fetchStructureHelp),
     blocks.divider(),
@@ -320,6 +340,15 @@ export async function handleAdmin(ctx: AdminRouteContext): Promise<BlockResponse
     return {
       blocks: await buildBlocks(ctx, m, locale),
       toast: { message: m.tokenSaved, type: "success" },
+    };
+  }
+
+  if (interaction?.type === "block_action" && interaction.action_id === GENERATE_TOKEN_ACTION_ID) {
+    const token = generateWebhookToken();
+    await ctx.kv.set(CONFIG_KEYS.webhookToken, token);
+    return {
+      blocks: await buildBlocks(ctx, m, locale, undefined, undefined, buildWebhookUrl(ctx, token)),
+      toast: { message: m.tokenGeneratedToast, type: "success" },
     };
   }
 
