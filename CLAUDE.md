@@ -24,7 +24,7 @@
 1. **配布は npm のみ**。本プラグインは `format: "native"` かつ API ルートを宣言するため EmDash マーケットプレイス（sandboxed 向け）には公開できない。`astro.config.mjs` の `plugins: []` に導入して使う。
 2. **changeset の bump 種別**: 明示的な指示がない限り **`patch`** を使う（`minor` は後方互換の公開 API 追加、`major` は破壊的変更のみ）。`src/**` を変更する PR には changeset を必須（`skip-changeset` ラベルで免除）。
 3. **UI 文字列は i18n カタログ経由**（`src/i18n/messages.ts`）。管理画面（Block Kit）に出す文字列を直書きせず、`en`/`ja` 両ロケールにキーを追加する（`tests/i18n.test.ts` がキー網羅を検証）。**ログや throw する Error 等の開発者向けメッセージは英語のまま**カタログ外に置く。
-4. **プラグイン `id` は `ndash`**（webhook URL `/_emdash/api/plugins/ndash/webhook`・storage・admin.pages）。npm パッケージ名 `emdash-notion` とは別物なので id は安易に変えない。
+4. **プラグイン `id` は `emdash-notion`**（webhook URL `/_emdash/api/plugins/emdash-notion/webhook`・storage・admin.pages）。
 
 ---
 

@@ -1,6 +1,6 @@
 /**
  * 標準 Sanity Portable Text の最小型。emdash は `@portabletext/types` を使うが、
- * ndash は自己完結のため必要分だけ写す。
+ * emdash-notion は自己完結のため必要分だけ写す。
  */
 
 export interface PortableTextSpan {

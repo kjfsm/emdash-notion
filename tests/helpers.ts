@@ -58,7 +58,7 @@ export function createTestContext(options: TestContextOptions = {}): TestContext
   const log = (level: string) => (message: string) => void logs.push({ level, message });
 
   const ctx = {
-    plugin: { id: "ndash", version: "0.1.0" },
+    plugin: { id: "emdash-notion", version: "0.1.0" },
     site: { name: "Test", url: "https://example.com", locale: "en" },
     url: (p: string) => `https://example.com${p}`,
     storage: { syncMap: sync.collection },

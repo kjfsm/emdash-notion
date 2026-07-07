@@ -8,7 +8,7 @@ A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion web
 
 ## What it does
 
-- Receives Notion's official webhook at `/_emdash/api/plugins/ndash/webhook` and fetches the target page
+- Receives Notion's official webhook at `/_emdash/api/plugins/emdash-notion/webhook` and fetches the target page
 - Converts the page body (headings, paragraphs, lists, quotes, code, dividers, images, etc.) to Portable Text
 - Imports images into EmDash media (Notion's signed image URLs expire after ~1 hour)
 - Maps title and body (Portable Text), plus optional properties such as author and slug, to EmDash fields
@@ -32,12 +32,12 @@ A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion web
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { ndashPlugin } from "emdash-notion";
+   import { emdashNotionPlugin } from "emdash-notion";
 
    export default defineConfig({
      integrations: [
        emdash({
-         plugins: [ndashPlugin()],
+         plugins: [emdashNotionPlugin()],
        }),
      ],
    });
@@ -53,7 +53,7 @@ A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion web
 3. Create a Notion webhook subscription pointed at the URL shown after generating the token:
 
    ```
-   https://<your-site>/_emdash/api/plugins/ndash/webhook?token=<Webhook URL Token>
+   https://<your-site>/_emdash/api/plugins/emdash-notion/webhook?token=<Webhook URL Token>
    ```
 
    The subscription handshake (`verification_token`) is echoed back automatically.

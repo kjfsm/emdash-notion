@@ -15,9 +15,9 @@ export interface NdashOptions {
  * ネイティブ形式のため descriptor とランタイム（`createPlugin`）は同一ファイルに同居できる
  * （sandboxed と異なり実行環境が分かれないため）。
  */
-export function ndashPlugin(options: NdashOptions = {}): PluginDescriptor<NdashOptions> {
+export function emdashNotionPlugin(options: NdashOptions = {}): PluginDescriptor<NdashOptions> {
   return {
-    id: "ndash",
+    id: "emdash-notion",
     version: "0.1.0",
     format: "native",
     entrypoint: "emdash-notion",
@@ -35,7 +35,7 @@ export function ndashPlugin(options: NdashOptions = {}): PluginDescriptor<NdashO
  */
 export function createPlugin(_options: NdashOptions = {}) {
   return definePlugin({
-    id: "ndash",
+    id: "emdash-notion",
     version: "0.1.0",
 
     capabilities: ["content:read", "content:write", "media:read", "media:write", "network:request"],
@@ -50,7 +50,7 @@ export function createPlugin(_options: NdashOptions = {}) {
     // （マニフェストに載るだけで実行時に消費されない）。サイドバー/歯車アイコンは
     // admin.pages の有無で決まるため、Block Kit ページを自前で登録する（routes/admin.ts）。
     admin: {
-      pages: [{ path: "/", label: "ndash", icon: "settings" }],
+      pages: [{ path: "/", label: "emdash-notion", icon: "settings" }],
     },
 
     routes: {

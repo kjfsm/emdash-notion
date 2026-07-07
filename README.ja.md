@@ -8,7 +8,7 @@ Notion の Webhook を受け取り、ページを Portable Text に変換して 
 
 ## できること
 
-- Notion 公式 Webhook（`/_emdash/api/plugins/ndash/webhook`）を受け、対象ページを取得
+- Notion 公式 Webhook（`/_emdash/api/plugins/emdash-notion/webhook`）を受け、対象ページを取得
 - ページ本文（見出し・段落・リスト・引用・コード・区切り線・画像等）を [Portable Text](https://github.com/portabletext/portabletext) へ変換
 - 画像は emdash メディアへ取り込み（Notion の署名付き画像 URL は約 1 時間で失効するため）
 - タイトル・本文（Portable Text）に加えて、著者・slug などの任意プロパティも emdash フィールドへマッピング可能
@@ -32,18 +32,18 @@ Notion の Webhook を受け取り、ページを Portable Text に変換して 
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { ndashPlugin } from "emdash-notion";
+   import { emdashNotionPlugin } from "emdash-notion";
 
    export default defineConfig({
      integrations: [
        emdash({
-         plugins: [ndashPlugin()],
+         plugins: [emdashNotionPlugin()],
        }),
      ],
    });
    ```
 
-2. emdash 管理画面のプラグイン一覧 → ndash の歯車アイコンから設定ページを開き、次の順で設定する:
+2. emdash 管理画面のプラグイン一覧 → emdash-notion の歯車アイコンから設定ページを開き、次の順で設定する:
    1. **言語** — English / 日本語 を選ぶ（任意。既定は英語）
    2. **トークンを保存** — Notion Integration Token を入力して保存（保存すると以降のドロップダウンがこのトークンで Notion を検索する）
    3. **EmDash token を生成** — 「EmDash token を生成」ボタンを押すと、ランダムな Webhook URL token が生成・自動保存され、Notion に登録すべき完全な Webhook URL が画面に表示される。「Webhook URL トークン」欄に自分で好きな値を入力してもよい。この値は Notion が購読作成時に一度だけ送ってくる `verification_token`（別概念）とは無関係。
@@ -53,7 +53,7 @@ Notion の Webhook を受け取り、ページを Portable Text に変換して 
 3. Notion 側の Webhook 購読を作成し、トークン生成後に表示された URL を購読 URL として登録する:
 
    ```
-   https://<your-site>/_emdash/api/plugins/ndash/webhook?token=<Webhook URL Token>
+   https://<your-site>/_emdash/api/plugins/emdash-notion/webhook?token=<Webhook URL Token>
    ```
 
    購読作成時のハンドシェイク（`verification_token`）は自動でエコー返しされる。
