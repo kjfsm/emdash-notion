@@ -45,11 +45,12 @@ A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion web
 
 2. Open the plugin's settings page from the EmDash admin (gear icon), and configure in order:
    1. **Language** — pick English or 日本語 (optional; English by default).
-   2. **Save tokens** — enter the Notion integration token and a webhook URL token, then save. Afterwards the dropdowns query Notion with this token.
-   3. **Add mapping** — fill the empty form at the bottom (emdash collection slug, Notion database, author/slug properties) and save. Each saved mapping becomes an independent form you can edit, save, or delete. Title/body/author/slug field slug candidates fill in automatically once the collection has content.
-   4. **Manual fetch** — sync now to verify.
+   2. **Save tokens** — enter the Notion integration token, then save. Afterwards the dropdowns query Notion with this token.
+   3. **Generate EmDash token** — click "Generate EmDash token" to create a random webhook URL token (saved automatically) and show the full webhook URL to register in Notion. You can also enter your own value in the "Webhook URL token" field instead. Note this token is unrelated to the `verification_token` Notion sends once during subscription setup.
+   4. **Add mapping** — fill the empty form at the bottom (emdash collection slug, Notion database, author/slug properties) and save. Each saved mapping becomes an independent form you can edit, save, or delete. Title/body/author/slug field slug candidates fill in automatically once the collection has content.
+   5. **Manual fetch** — sync now to verify.
 
-3. Create a Notion webhook subscription pointed at:
+3. Create a Notion webhook subscription pointed at the URL shown after generating the token:
 
    ```
    https://<your-site>/_emdash/api/plugins/ndash/webhook?token=<Webhook URL Token>

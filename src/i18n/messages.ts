@@ -24,7 +24,13 @@ export interface Messages {
   webhookTokenLabel: string;
   webhookTokenSetPlaceholder: string;
   webhookTokenNewPlaceholder: string;
+  webhookTokenHelp: string;
   saveConnection: string;
+
+  generateTokenButton: string;
+  generateTokenHelp: string;
+  tokenGeneratedTitle: string;
+  tokenGeneratedInstruction: string;
 
   fetchStructureButton: string;
   fetchStructureHelp: string;
@@ -70,6 +76,7 @@ export interface Messages {
   mappingDeleted: string;
   syncDoneToast: string;
   syncPartialFailToast: string;
+  tokenGeneratedToast: string;
 
   configMissing: string;
 }
@@ -85,7 +92,15 @@ const en: Messages = {
   webhookTokenLabel: "Webhook URL token",
   webhookTokenSetPlaceholder: "Saved (leave blank to keep unchanged)",
   webhookTokenNewPlaceholder: "Any shared secret",
+  webhookTokenHelp:
+    "This is a shared secret embedded in the webhook URL's `?token=` query — unrelated to the `verification_token` Notion sends once when you create the subscription.",
   saveConnection: "Save tokens",
+
+  generateTokenButton: "Generate EmDash token",
+  generateTokenHelp:
+    "Generates a random shared secret, saves it as the Webhook URL token above, and shows the full webhook URL to register in Notion.",
+  tokenGeneratedTitle: "EmDash token generated",
+  tokenGeneratedInstruction: "Register this URL as the webhook endpoint in Notion.",
 
   fetchStructureButton: "Fetch Notion structure",
   fetchStructureHelp:
@@ -138,6 +153,7 @@ const en: Messages = {
   mappingDeleted: "Mapping deleted",
   syncDoneToast: "Manual fetch complete",
   syncPartialFailToast: "Some pages failed",
+  tokenGeneratedToast: "EmDash token generated and saved",
 
   configMissing:
     "Plugin not configured (enter the Notion token and at least one collection ⇔ database mapping)",
@@ -154,7 +170,15 @@ const ja: Messages = {
   webhookTokenLabel: "Webhook URL トークン",
   webhookTokenSetPlaceholder: "設定済み（空欄のままなら変更しない）",
   webhookTokenNewPlaceholder: "任意の共有シークレット",
+  webhookTokenHelp:
+    "これは Webhook URL の `?token=` に埋め込む共有シークレットです。Notion が購読作成時に一度だけ送ってくる `verification_token` とは別物です。",
   saveConnection: "トークンを保存",
+
+  generateTokenButton: "EmDash token を生成",
+  generateTokenHelp:
+    "ランダムな共有シークレットを生成し、上の Webhook URL トークンとして保存します。生成後、Notion に登録する Webhook URL を表示します。",
+  tokenGeneratedTitle: "EmDash token を生成しました",
+  tokenGeneratedInstruction: "これを Notion の Webhook URL に登録してください。",
 
   fetchStructureButton: "Notionの構造を取得する",
   fetchStructureHelp:
@@ -208,6 +232,7 @@ const ja: Messages = {
   mappingDeleted: "対応を削除しました",
   syncDoneToast: "手動取得が完了しました",
   syncPartialFailToast: "一部のページで失敗しました",
+  tokenGeneratedToast: "EmDash token を生成して保存しました",
 
   configMissing:
     "プラグイン未設定（Notion トークン / コレクションとデータベースの対応を入力してください）",

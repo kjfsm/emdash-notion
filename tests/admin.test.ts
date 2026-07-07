@@ -177,6 +177,24 @@ describe("handleAdmin", () => {
     expect(blocksJson).not.toContain('"structureNotFetchedHint"');
   });
 
+  it("generate_webhook_token: ランダムトークンを生成して kv に保存し、Webhook URL を banner に表示する", async () => {
+    const t = createTestContext({ kv: {} });
+    const routeCtx = withRoute<AdminRouteContext>(
+      t.ctx,
+      { type: "block_action", action_id: "generate_webhook_token" },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(routeCtx);
+
+    const saved = t.kv.get("settings:webhookToken") as string;
+    expect(saved).toMatch(/^[0-9a-f]{64}$/);
+    expect(res.toast?.type).toBe("success");
+    const blocksJson = JSON.stringify(res.blocks);
+    expect(blocksJson).toContain(
+      `https://example.com/_emdash/api/plugins/ndash/webhook?token=${saved}`,
+    );
+  });
+
   it("fetch_structure: 一部データベースが失敗すると banner にエラーが含まれ、成功分は反映される", async () => {
     const t = createTestContext({
       kv: { "settings:notionToken": "secret_x" },
