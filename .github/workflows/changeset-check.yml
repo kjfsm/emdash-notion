@@ -37,7 +37,7 @@ jobs:
         run: echo "skip-changeset ラベル付きのため changeset チェックを省略します"
 
       - if: steps.label.outputs.skip == 'false'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
