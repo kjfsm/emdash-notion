@@ -85,7 +85,7 @@ describe("ingestPage", () => {
     expect(t.created).toHaveLength(1);
     expect(t.created[0]!.collection).toBe("posts");
     expect(t.created[0]!.data.title).toBe("My Page");
-    const body = t.created[0]!.data.body as Array<{
+    const body = t.created[0]!.data.content as Array<{
       _type: string;
       children?: Array<{ text: string }>;
     }>;
@@ -160,7 +160,10 @@ describe("ingestPage", () => {
     });
     let attempts = 0;
     const t = createTestContext({
-      kv,
+      kv: {
+        "settings:notionToken": "secret_token",
+        "settings:mappings": [{ collection: "posts", databaseId: "db1", authorField: "author" }],
+      },
       fetch,
       onCreate: (_collection, data) => {
         attempts++;

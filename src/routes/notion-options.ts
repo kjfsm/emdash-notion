@@ -31,7 +31,7 @@ export async function handleListDatabases(
 
   do {
     const page = await client.searchDatabases(cursor);
-    for (const db of page.results) items.push({ id: db.id, name: plainTitle(db) });
+    for (const db of page.results) items.push({ id: db.id, name: `${plainTitle(db)} (${db.id})` });
     cursor = page.has_more && page.next_cursor ? page.next_cursor : undefined;
   } while (cursor);
 

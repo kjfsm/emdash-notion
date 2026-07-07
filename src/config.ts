@@ -42,12 +42,18 @@ export const CONFIG_KEYS = {
   mappings: "settings:mappings",
 } as const;
 
+/**
+ * emdash の標準シード（`pages`/`posts`）の実フィールド構成に合わせた既定値。
+ * `author`/`slug` はどちらのシードコレクションにもカスタムフィールドとして存在しない
+ * （著者は emdash コアの bylines 機構が扱う予約領域、`slug` はシステム列の予約語で
+ * カスタムフィールドの slug には使えない）ため、既定では同期しない（空文字）。
+ */
 export const DEFAULT_TITLE_FIELD = "title";
-export const DEFAULT_BODY_FIELD = "body";
+export const DEFAULT_BODY_FIELD = "content";
 export const DEFAULT_AUTHOR_PROPERTY = "Author";
 export const DEFAULT_SLUG_PROPERTY = "slug";
-export const DEFAULT_AUTHOR_FIELD = "author";
-export const DEFAULT_SLUG_FIELD = "slug";
+export const DEFAULT_AUTHOR_FIELD = "";
+export const DEFAULT_SLUG_FIELD = "";
 
 function normalizeMapping(raw: Partial<NotionMapping>): NotionMapping {
   return {

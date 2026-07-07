@@ -76,9 +76,9 @@ const en: Messages = {
   webhookTokenNewPlaceholder: "Any shared secret",
   saveConnection: "Save tokens",
 
-  collectionLabel: "emdash collection slug",
+  collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",
-  databaseLabel: "Notion database",
+  databaseLabel: "Notion Database",
   authorPropertyLabel: "Author property (Notion side)",
   authorFieldLabel: "Author field slug (emdash side — leave unset to skip)",
   slugPropertyLabel: "Slug property (Notion side)",
@@ -131,9 +131,9 @@ const ja: Messages = {
   webhookTokenNewPlaceholder: "任意の共有シークレット",
   saveConnection: "トークンを保存",
 
-  collectionLabel: "emdash コレクション Slug",
+  collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",
-  databaseLabel: "Notion データベース",
+  databaseLabel: "Notion Database",
   authorPropertyLabel: "著者プロパティ（Notion 側）",
   authorFieldLabel: "著者フィールド Slug（emdash 側・未選択なら同期しない）",
   slugPropertyLabel: "slug プロパティ（Notion 側）",

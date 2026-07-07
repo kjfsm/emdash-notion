@@ -55,9 +55,9 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
     [mapping.titleField]: title,
     [mapping.bodyField]: body,
   };
-  // WHY: authorField/slugField は既定値（author/slug）を持つため、コレクション側に該当フィールドが
-  // 無いサイトでも書き込みを試みてしまう。emdash にはスキーマを事前確認する手段が無いため、
-  // 「存在しない列」エラーを検知して該当フィールドだけ外して再試行する（writeContent 参照）。
+  // WHY: authorField/slugField はユーザーが手入力するフィールド名で、実際にはコレクション側に
+  // 存在しないこともある。emdash にはスキーマを事前確認する手段が無いため、「存在しない列」
+  // エラーを検知して該当フィールドだけ外して再試行する（writeContent 参照）。
   const optionalFields: Record<string, unknown> = {};
   if (mapping.authorField && author) optionalFields[mapping.authorField] = author;
   if (mapping.slugField && slug) optionalFields[mapping.slugField] = slug;
@@ -100,7 +100,7 @@ const MISSING_COLUMN_RE = /no column named[:\s]+["'`]?(\w+)["'`]?/i;
 
 /**
  * `ctx.content.create/update` を実行する。emdash にはプラグインからコレクションのスキーマを
- * 事前確認する手段が無いため、authorField/slugField（既定値付きの任意フィールド）が原因で
+ * 事前確認する手段が無いため、authorField/slugField（任意フィールド）が原因で
  * 「存在しない列」エラーになった場合は、そのフィールドだけ外して再試行する。
  * titleField/bodyField は必須フィールドのため対象外（それ以外の理由での失敗はそのまま投げる）。
  */

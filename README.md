@@ -23,7 +23,7 @@ A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion web
 - **EmDash's system slug column cannot be set.** `ctx.content.create/update` accepts field data only, so the value written to the “slug field slug” is stored as a regular data field, not the URL-routing slug column.
 - The author/slug property dropdowns aggregate property names across **all** databases shared with the integration (not filtered to the selected row's database).
 - EmDash exposes no schema-introspection or raw-DB API to plugins (deliberately locked down). So the “emdash collection slug” is free text, and the title/body/author/slug field slugs are picked from a `list-fields` dropdown that reverse-engineers field names from the mapped collection's existing content. If a collection has no content yet, no candidates appear.
-- Author/slug field slugs default to `author`/`slug`; if the target collection lacks that field, only that field is skipped (a missing title/body field still errors).
+- The body field slug defaults to `content` (matching EmDash's standard `pages`/`posts` seed). Author/slug field slugs default to blank (not synced); if set and the target collection lacks that field, only that field is skipped (a missing title/body field still errors).
 
 ## Setup
 
