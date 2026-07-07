@@ -16,7 +16,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/dependency-review-action@v5
         with:
           # ライセンス許諾外の依存や既知脆弱性を検出

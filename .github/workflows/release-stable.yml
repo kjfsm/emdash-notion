@@ -36,7 +36,7 @@ jobs:
       startsWith(github.event.head_commit.message, 'Version Packages')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # デフォルトの GITHUB_TOKEN で作成した PR は他ワークフロー (release-dry-run.yml など)
