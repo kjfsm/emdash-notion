@@ -17,6 +17,7 @@ import {
   DEFAULT_TITLE_FIELD,
   loadConfig,
   type NotionMapping,
+  STATE_KEYS,
 } from "../config.js";
 import {
   getMessages,
@@ -210,10 +211,22 @@ async function buildBlocks(
   syncResult?: BulkSyncResult,
 ): Promise<Block[]> {
   const config = await loadConfig(ctx);
+  const verificationToken = await ctx.kv.get<string>(STATE_KEYS.verificationToken);
 
-  const result: Block[] = [
-    blocks.header(m.pageTitle),
-    blocks.context(m.pageIntro),
+  const result: Block[] = [blocks.header(m.pageTitle), blocks.context(m.pageIntro)];
+
+  // Notion の購読作成ハンドシェイクで届いたトークンを表示し、Notion 側への貼り戻しを促す。
+  if (verificationToken) {
+    result.push(
+      blocks.banner({
+        title: m.verificationReceivedTitle,
+        description: m.verificationReceivedDescription(verificationToken),
+        variant: "alert",
+      }),
+    );
+  }
+
+  result.push(
     connectionFormBlock(config, m, locale),
     blocks.divider(),
     ...mappingsSection(config.mappings, m),
@@ -221,7 +234,7 @@ async function buildBlocks(
     blocks.section(m.manualSyncSection, {
       accessory: elements.button(MANUAL_SYNC_ACTION_ID, m.manualSync, { style: "primary" }),
     }),
-  ];
+  );
 
   if (syncResult) result.push(syncResultBanner(syncResult, m));
 

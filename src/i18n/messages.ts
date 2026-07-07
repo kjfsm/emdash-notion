@@ -26,6 +26,9 @@ export interface Messages {
   webhookTokenNewPlaceholder: string;
   saveConnection: string;
 
+  verificationReceivedTitle: string;
+  verificationReceivedDescription: (token: string) => string;
+
   collectionLabel: string;
   collectionPlaceholder: string;
   databaseLabel: string;
@@ -75,6 +78,10 @@ const en: Messages = {
   webhookTokenSetPlaceholder: "Saved (leave blank to keep unchanged)",
   webhookTokenNewPlaceholder: "Any shared secret",
   saveConnection: "Save tokens",
+
+  verificationReceivedTitle: "Notion verification token received",
+  verificationReceivedDescription: (token) =>
+    `Paste this value into Notion's webhook verification field, then save: ${token}`,
 
   collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",
@@ -130,6 +137,10 @@ const ja: Messages = {
   webhookTokenSetPlaceholder: "設定済み（空欄のままなら変更しない）",
   webhookTokenNewPlaceholder: "任意の共有シークレット",
   saveConnection: "トークンを保存",
+
+  verificationReceivedTitle: "Notion の検証トークンを受信しました",
+  verificationReceivedDescription: (token) =>
+    `この値を Notion の Webhook 検証欄に貼り付けて保存してください: ${token}`,
 
   collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",

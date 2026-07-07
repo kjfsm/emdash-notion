@@ -1,6 +1,6 @@
 import type { PluginContext } from "emdash";
 
-import { loadConfig } from "../config.js";
+import { loadConfig, STATE_KEYS } from "../config.js";
 import { verifyWebhookToken } from "../notion/signature.js";
 import type { NotionWebhookPayload } from "../notion/types.js";
 import { ingestPage } from "../sync/ingest.js";
@@ -37,7 +37,7 @@ export async function handleWebhook(ctx: WebhookRouteContext): Promise<unknown> 
 
   // 購読作成時のハンドシェイク: verification_token を保存してそのままエコー返しする。
   if (typeof payload.verification_token === "string") {
-    await ctx.kv.set("state:verificationToken", payload.verification_token);
+    await ctx.kv.set(STATE_KEYS.verificationToken, payload.verification_token);
     ctx.log.info("notion webhook verification handshake received");
     return { verification_token: payload.verification_token };
   }
