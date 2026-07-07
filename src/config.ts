@@ -1,5 +1,11 @@
 import type { PluginContext } from "emdash";
 
+/** Notion 構造取得（データベース/プロパティ）と emdash フィールド候補の選択肢アイテム。 */
+export interface OptionItem {
+  id: string;
+  name: string;
+}
+
 /**
  * 1 つの emdash コレクションと 1 つの Notion データベースの対応関係。
  * `mappings` は複数持てる（例: posts ⇔ ブログ DB、pages ⇔ 固定ページ DB）。
@@ -34,12 +40,18 @@ export interface NdashConfig {
   webhookToken: string;
   /** コレクション ⇔ データベースの対応関係一覧。 */
   mappings: NotionMapping[];
+  /** 「Notionの構造を取得する」ボタンで取得済みの Notion データベース一覧。 */
+  notionDatabases: OptionItem[];
+  /** 同ボタンで取得済みの Notion プロパティ名一覧（rich_text/title のみ）。 */
+  notionProperties: OptionItem[];
 }
 
 export const CONFIG_KEYS = {
   notionToken: "settings:notionToken",
   webhookToken: "settings:webhookToken",
   mappings: "settings:mappings",
+  notionDatabases: "settings:notionDatabases",
+  notionProperties: "settings:notionProperties",
 } as const;
 
 /**
@@ -70,16 +82,21 @@ function normalizeMapping(raw: Partial<NotionMapping>): NotionMapping {
 
 /** kv から設定を読み出す。未設定フィールドは既定値または空文字で埋める。 */
 export async function loadConfig(ctx: PluginContext): Promise<NdashConfig> {
-  const [notionToken, webhookToken, rawMappings] = await Promise.all([
-    ctx.kv.get<string>(CONFIG_KEYS.notionToken),
-    ctx.kv.get<string>(CONFIG_KEYS.webhookToken),
-    ctx.kv.get<Partial<NotionMapping>[]>(CONFIG_KEYS.mappings),
-  ]);
+  const [notionToken, webhookToken, rawMappings, notionDatabases, notionProperties] =
+    await Promise.all([
+      ctx.kv.get<string>(CONFIG_KEYS.notionToken),
+      ctx.kv.get<string>(CONFIG_KEYS.webhookToken),
+      ctx.kv.get<Partial<NotionMapping>[]>(CONFIG_KEYS.mappings),
+      ctx.kv.get<OptionItem[]>(CONFIG_KEYS.notionDatabases),
+      ctx.kv.get<OptionItem[]>(CONFIG_KEYS.notionProperties),
+    ]);
 
   return {
     notionToken: notionToken ?? "",
     webhookToken: webhookToken ?? "",
     mappings: Array.isArray(rawMappings) ? rawMappings.map(normalizeMapping) : [],
+    notionDatabases: Array.isArray(notionDatabases) ? notionDatabases : [],
+    notionProperties: Array.isArray(notionProperties) ? notionProperties : [],
   };
 }
 

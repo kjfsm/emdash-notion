@@ -26,6 +26,17 @@ export interface Messages {
   webhookTokenNewPlaceholder: string;
   saveConnection: string;
 
+  fetchStructureButton: string;
+  fetchStructureHelp: string;
+  structureNotFetchedHint: string;
+  structureFetchNoTokenTitle: string;
+  structureFetchNoTokenBody: string;
+  structureFetchedTitle: string;
+  structureFetchedBody: (databases: number, properties: number) => string;
+  structureFetchedToast: string;
+  structureFetchPartialTitle: string;
+  structureFetchPartialSuffix: (errors: string[]) => string;
+
   collectionLabel: string;
   collectionPlaceholder: string;
   databaseLabel: string;
@@ -75,6 +86,20 @@ const en: Messages = {
   webhookTokenSetPlaceholder: "Saved (leave blank to keep unchanged)",
   webhookTokenNewPlaceholder: "Any shared secret",
   saveConnection: "Save tokens",
+
+  fetchStructureButton: "Fetch Notion structure",
+  fetchStructureHelp:
+    "After saving your token, click this to fetch your Notion databases and property names below.",
+  structureNotFetchedHint:
+    "Notion structure hasn't been fetched yet. Click “Fetch Notion structure” above first.",
+  structureFetchNoTokenTitle: "Can't fetch — no Notion token saved",
+  structureFetchNoTokenBody: "Save your Notion integration token above, then try again.",
+  structureFetchedTitle: "Notion structure fetched",
+  structureFetchedBody: (databases, properties) =>
+    `${databases} database(s), ${properties} property name(s) found.`,
+  structureFetchedToast: "Notion structure fetched",
+  structureFetchPartialTitle: "Notion structure fetched with some errors",
+  structureFetchPartialSuffix: (errors) => ` (failed: ${errors.join(" / ")})`,
 
   collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",
@@ -130,6 +155,21 @@ const ja: Messages = {
   webhookTokenSetPlaceholder: "設定済み（空欄のままなら変更しない）",
   webhookTokenNewPlaceholder: "任意の共有シークレット",
   saveConnection: "トークンを保存",
+
+  fetchStructureButton: "Notionの構造を取得する",
+  fetchStructureHelp:
+    "トークンを保存した後にこれを押すと、Notion のデータベース一覧とプロパティ名を取得して下のセレクトに反映します。",
+  structureNotFetchedHint:
+    "まだ Notion の構造を取得していません。上の「Notionの構造を取得する」ボタンを押してください。",
+  structureFetchNoTokenTitle: "取得できません（Notion トークン未保存）",
+  structureFetchNoTokenBody:
+    "上で Notion インテグレーショントークンを保存してから、もう一度お試しください。",
+  structureFetchedTitle: "Notion の構造を取得しました",
+  structureFetchedBody: (databases, properties) =>
+    `データベース ${databases} 件、プロパティ名 ${properties} 件が見つかりました。`,
+  structureFetchedToast: "Notion の構造を取得しました",
+  structureFetchPartialTitle: "一部エラーがありましたが取得しました",
+  structureFetchPartialSuffix: (errors) => `（失敗: ${errors.join(" / ")}）`,
 
   collectionLabel: "EmDash Collection",
   collectionPlaceholder: "posts",

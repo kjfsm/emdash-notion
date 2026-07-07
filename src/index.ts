@@ -3,7 +3,6 @@ import type { PluginDescriptor } from "emdash";
 
 import { handleAdmin } from "./routes/admin.js";
 import { handleListFields } from "./routes/emdash-options.js";
-import { handleListDatabases, handleListProperties } from "./routes/notion-options.js";
 import { handleWebhook } from "./routes/webhook.js";
 
 export interface NdashOptions {
@@ -61,12 +60,6 @@ export function createPlugin(_options: NdashOptions = {}) {
       },
       admin: {
         handler: handleAdmin,
-      },
-      "list-databases": {
-        handler: handleListDatabases,
-      },
-      "list-properties": {
-        handler: handleListProperties,
       },
       "list-fields": {
         handler: handleListFields,
