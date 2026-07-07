@@ -1,6 +1,6 @@
 import type { PluginContext } from "emdash";
 
-import { loadConfig, STATE_KEYS } from "../config.js";
+import { loadConfig } from "../config.js";
 import { verifyWebhookToken } from "../notion/signature.js";
 import type { NotionWebhookPayload } from "../notion/types.js";
 import { ingestPage } from "../sync/ingest.js";
@@ -35,9 +35,9 @@ function unauthorized(): never {
 export async function handleWebhook(ctx: WebhookRouteContext): Promise<unknown> {
   const payload = (ctx.input ?? {}) as NotionWebhookPayload;
 
-  // 購読作成時のハンドシェイク: verification_token を保存してそのままエコー返しする。
+  // 購読作成時のハンドシェイク: verification_token をログに出し（Workers ログから手動でコピーして
+  // Notion 側に貼り戻す運用）、そのままエコー返しする。保持しておく必要はない一度きりの値。
   if (typeof payload.verification_token === "string") {
-    await ctx.kv.set(STATE_KEYS.verificationToken, payload.verification_token);
     ctx.log.info(`notion webhook verification handshake received: ${payload.verification_token}`);
     return { verification_token: payload.verification_token };
   }

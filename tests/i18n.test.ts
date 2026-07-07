@@ -78,21 +78,6 @@ describe("handleAdmin i18n rendering", () => {
     expect(JSON.stringify(res.blocks)).toContain(getMessages("ja").saveConnection);
   });
 
-  it("verification_token 受信時のみ検証用バナーを描画する", async () => {
-    const t = createTestContext({ kv: {} });
-    const res = await pageLoad(
-      withRoute<AdminRouteContext>(t.ctx, { type: "page_load", page: "/" }, "https://x/admin"),
-    );
-    expect(JSON.stringify(res.blocks)).not.toContain(getMessages("en").verificationReceivedTitle);
-
-    const t2 = createTestContext({ kv: { "state:verificationToken": "vt-123" } });
-    const res2 = await pageLoad(
-      withRoute<AdminRouteContext>(t2.ctx, { type: "page_load", page: "/" }, "https://x/admin"),
-    );
-    expect(JSON.stringify(res2.blocks)).toContain(getMessages("en").verificationReceivedTitle);
-    expect(JSON.stringify(res2.blocks)).toContain("vt-123");
-  });
-
   it("save_connection で選択言語を保存し、応答も新言語で描画する", async () => {
     const t = createTestContext({ kv: {} });
     const res = await pageLoad(

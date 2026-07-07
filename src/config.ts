@@ -42,12 +42,6 @@ export const CONFIG_KEYS = {
   mappings: "settings:mappings",
 } as const;
 
-/** Webhook ハンドシェイクなど、設定ではなく一時的な実行時状態を保持する kv キー。 */
-export const STATE_KEYS = {
-  /** 購読作成時に Notion から届く検証トークン（管理画面に表示し、Notion 側へ貼り戻してもらう）。 */
-  verificationToken: "state:verificationToken",
-} as const;
-
 /**
  * emdash の標準シード（`pages`/`posts`）の実フィールド構成に合わせた既定値。
  * `author`/`slug` はどちらのシードコレクションにもカスタムフィールドとして存在しない

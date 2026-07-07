@@ -16,7 +16,7 @@ describe("extractPageId", () => {
 });
 
 describe("handleWebhook", () => {
-  it("verification_token ハンドシェイクをエコー返しし kv に保存する", async () => {
+  it("verification_token ハンドシェイクをエコー返しし、ログに出力する", async () => {
     const t = createTestContext();
     const routeCtx = withRoute<WebhookRouteContext>(
       t.ctx,
@@ -25,7 +25,7 @@ describe("handleWebhook", () => {
     );
     const res = (await handleWebhook(routeCtx)) as { verification_token: string };
     expect(res.verification_token).toBe("vt-123");
-    expect(t.kv.get("state:verificationToken")).toBe("vt-123");
+    expect(t.logs.some((l) => l.message.includes("vt-123"))).toBe(true);
   });
 
   it("token 不一致は 401 Response を throw する", async () => {
