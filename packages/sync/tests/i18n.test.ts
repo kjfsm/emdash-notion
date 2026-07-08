@@ -9,12 +9,11 @@ import {
   resolveLocale,
 } from "../src/i18n/index.js";
 import { messages } from "../src/i18n/messages.js";
-import type { AdminRouteContext } from "../src/routes/admin.js";
 import { handleAdmin } from "../src/routes/admin.js";
 import { createTestContext, withRoute } from "./helpers.js";
 
-function pageLoad(ctx: AdminRouteContext) {
-  return handleAdmin(ctx);
+function pageLoad(routeCtx: ReturnType<typeof withRoute>) {
+  return handleAdmin(...routeCtx);
 }
 
 describe("i18n catalog", () => {
@@ -64,7 +63,7 @@ describe("handleAdmin i18n rendering", () => {
   it("既定では英語で描画する", async () => {
     const t = createTestContext({ kv: {} });
     const res = await pageLoad(
-      withRoute<AdminRouteContext>(t.ctx, { type: "page_load", page: "/" }, "https://x/admin"),
+      withRoute(t.ctx, { type: "page_load", page: "/" }, "https://x/admin"),
     );
     expect(JSON.stringify(res.blocks)).toContain(getMessages("en").pageTitle);
     expect(JSON.stringify(res.blocks)).not.toContain(getMessages("ja").saveConnection);
@@ -73,7 +72,7 @@ describe("handleAdmin i18n rendering", () => {
   it("settings:locale=ja なら日本語で描画する", async () => {
     const t = createTestContext({ kv: { [LOCALE_CONFIG_KEY]: "ja" } });
     const res = await pageLoad(
-      withRoute<AdminRouteContext>(t.ctx, { type: "page_load", page: "/" }, "https://x/admin"),
+      withRoute(t.ctx, { type: "page_load", page: "/" }, "https://x/admin"),
     );
     expect(JSON.stringify(res.blocks)).toContain(getMessages("ja").saveConnection);
   });
@@ -81,7 +80,7 @@ describe("handleAdmin i18n rendering", () => {
   it("save_connection で選択言語を保存し、応答も新言語で描画する", async () => {
     const t = createTestContext({ kv: {} });
     const res = await pageLoad(
-      withRoute<AdminRouteContext>(
+      withRoute(
         t.ctx,
         {
           type: "form_submit",

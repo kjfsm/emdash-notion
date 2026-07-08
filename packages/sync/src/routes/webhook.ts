@@ -1,4 +1,5 @@
 import type { PluginContext } from "emdash";
+import type { SandboxedRouteContext } from "emdash/plugin";
 
 import { loadConfig } from "../config.js";
 import { verifyWebhookToken } from "../notion/signature.js";
@@ -14,15 +15,6 @@ export function extractPageId(payload: NotionWebhookPayload): string | null {
   return null;
 }
 
-/**
- * native プラグインのルートハンドラは単一引数 `RouteContext`（`ctx.input`/`ctx.request` を
- * `PluginContext` にマージした形）を受け取る。sandboxed の 2 引数 `(routeCtx, ctx)` とは異なる。
- */
-export interface WebhookRouteContext extends PluginContext {
-  input: unknown;
-  request: { url: string };
-}
-
 /** 401 応答を投げる（emdash はカスタム status のため throw Response を用いる）。 */
 function unauthorized(): never {
   throw new Response(JSON.stringify({ error: "invalid or missing token" }), {
@@ -32,8 +24,11 @@ function unauthorized(): never {
 }
 
 /** Notion Webhook を処理する（検証 → ページ取得 → PT 変換 → emdash 保存）。 */
-export async function handleWebhook(ctx: WebhookRouteContext): Promise<unknown> {
-  const payload = (ctx.input ?? {}) as NotionWebhookPayload;
+export async function handleWebhook(
+  routeCtx: SandboxedRouteContext,
+  ctx: PluginContext,
+): Promise<unknown> {
+  const payload = (routeCtx.input ?? {}) as NotionWebhookPayload;
 
   // 購読作成時のハンドシェイク: verification_token をログに出し（Workers ログから手動でコピーして
   // Notion 側に貼り戻す運用）、そのままエコー返しする。保持しておく必要はない一度きりの値。
@@ -43,7 +38,7 @@ export async function handleWebhook(ctx: WebhookRouteContext): Promise<unknown> 
   }
 
   const config = await loadConfig(ctx);
-  if (!verifyWebhookToken(ctx.request.url, config.webhookToken)) {
+  if (!verifyWebhookToken(routeCtx.request.url, config.webhookToken)) {
     ctx.log.warn("notion webhook rejected: token mismatch");
     unauthorized();
   }

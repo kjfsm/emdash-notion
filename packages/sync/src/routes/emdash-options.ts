@@ -1,10 +1,7 @@
 import type { PluginContext } from "emdash";
+import type { SandboxedRouteContext } from "emdash/plugin";
 
 import { loadConfig } from "../config.js";
-
-export interface OptionsRouteContext extends PluginContext {
-  input: unknown;
-}
 
 interface OptionItem {
   id: string;
@@ -26,7 +23,10 @@ const SAMPLE_SIZE = 20;
  * WHY: 空のコレクション（コンテンツが 1 件も無い）や、これから追加する新規対応の
  * コレクションは候補に出せない（他の設定済みコレクションの候補が代わりに出る）。
  */
-export async function handleListFields(ctx: OptionsRouteContext): Promise<{ items: OptionItem[] }> {
+export async function handleListFields(
+  _routeCtx: SandboxedRouteContext,
+  ctx: PluginContext,
+): Promise<{ items: OptionItem[] }> {
   if (!ctx.content?.list) return { items: [] };
   const config = await loadConfig(ctx);
 

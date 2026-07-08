@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { extractPageId, handleWebhook, type WebhookRouteContext } from "../src/routes/webhook.js";
+import { extractPageId, handleWebhook } from "../src/routes/webhook.js";
 import { createTestContext, makeNotionHttp, withRoute } from "./helpers.js";
 
 describe("extractPageId", () => {
@@ -18,24 +18,20 @@ describe("extractPageId", () => {
 describe("handleWebhook", () => {
   it("verification_token ハンドシェイクをエコー返しし、ログに出力する", async () => {
     const t = createTestContext();
-    const routeCtx = withRoute<WebhookRouteContext>(
-      t.ctx,
-      { verification_token: "vt-123" },
-      "https://x/webhook",
-    );
-    const res = (await handleWebhook(routeCtx)) as { verification_token: string };
+    const routeCtx = withRoute(t.ctx, { verification_token: "vt-123" }, "https://x/webhook");
+    const res = (await handleWebhook(...routeCtx)) as { verification_token: string };
     expect(res.verification_token).toBe("vt-123");
     expect(t.logs.some((l) => l.message.includes("vt-123"))).toBe(true);
   });
 
   it("token 不一致は 401 Response を throw する", async () => {
     const t = createTestContext({ kv: { "settings:webhookToken": "right" } });
-    const routeCtx = withRoute<WebhookRouteContext>(
+    const routeCtx = withRoute(
       t.ctx,
       { entity: { id: "p1", type: "page" } },
       "https://x/webhook?token=wrong",
     );
-    await expect(handleWebhook(routeCtx)).rejects.toBeInstanceOf(Response);
+    await expect(handleWebhook(...routeCtx)).rejects.toBeInstanceOf(Response);
   });
 
   it("token 一致でページを取り込む", async () => {
@@ -61,12 +57,12 @@ describe("handleWebhook", () => {
       },
       fetch,
     });
-    const routeCtx = withRoute<WebhookRouteContext>(
+    const routeCtx = withRoute(
       t.ctx,
       { entity: { id: "p1", type: "page" } },
       "https://x/webhook?token=right",
     );
-    const res = (await handleWebhook(routeCtx)) as { ok: boolean; status: string };
+    const res = (await handleWebhook(...routeCtx)) as { ok: boolean; status: string };
     expect(res.ok).toBe(true);
     expect(res.status).toBe("created");
     expect(t.created).toHaveLength(1);
@@ -74,12 +70,12 @@ describe("handleWebhook", () => {
 
   it("ページエンティティが無ければ skip", async () => {
     const t = createTestContext({ kv: { "settings:webhookToken": "right" } });
-    const routeCtx = withRoute<WebhookRouteContext>(
+    const routeCtx = withRoute(
       t.ctx,
       { entity: { id: "d1", type: "database" } },
       "https://x/webhook?token=right",
     );
-    const res = (await handleWebhook(routeCtx)) as { ok: boolean; skipped: string };
+    const res = (await handleWebhook(...routeCtx)) as { ok: boolean; skipped: string };
     expect(res.ok).toBe(true);
     expect(res.skipped).toBeDefined();
   });

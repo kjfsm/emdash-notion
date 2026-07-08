@@ -2,10 +2,10 @@
 
 English version: [README.md](./README.md).
 
-Notion の Webhook を受け取り、ページを [Portable Text](https://github.com/portabletext/portabletext) に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する、2 つの **native プラグイン**からなる pnpm monorepo（Notion → emdash 一方向。MVP）。
+Notion の Webhook を受け取り、ページを [Portable Text](https://github.com/portabletext/portabletext) に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する pnpm monorepo（Notion → emdash 一方向。MVP）。同期処理（standard プラグイン）と見た目（native プラグイン）を分離した 2 つのプラグインからなる。
 
-- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync)、plugin id: `notion-sync`。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
-- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks)、plugin id: `notion-blocks`。Notion 固有ブロック（callout・to-do・toggle）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
+- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync)、plugin id: `notion-sync`（**standard** format）。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
+- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks)、plugin id: `notion-blocks`（**native** format）。Notion 固有ブロック（callout・to-do・toggle）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
 
 > 管理 UI（`notion-sync`）は **英語（既定）** と **日本語** に対応し、設定ページから切り替えられます。
 
@@ -32,7 +32,7 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
 ## セットアップ
 
-1. `astro.config.mjs` で両方を登録する（native は `plugins: []` 専用。`sandboxed: []` では動かない）:
+1. `astro.config.mjs` で両方を登録する（`notion-blocks` は native format のため `plugins: []` 専用。`notion-sync` は standard format だが、現状は同じ `plugins: []` に登録する）:
 
    ```typescript
    import { defineConfig } from "astro/config";
@@ -68,7 +68,7 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
 ## 配布
 
-いずれも API ルート／`componentsEntry` を宣言する **native** プラグインのため、**npm** で配布し `astro.config.mjs` に導入する（EmDash マーケットプレイスは sandboxed プラグイン向けのため対象外）。
+`notion-blocks` は `componentsEntry` を宣言する **native** プラグインのため、マーケットプレイス（sandboxed 向け）には公開できない。`notion-sync` は **standard** プラグインだが、`notion-blocks` と組で使う構成のため、両方とも **npm** で配布し `astro.config.mjs` に導入する。
 
 ## 開発
 
@@ -79,7 +79,7 @@ pnpm install
 pnpm typecheck   # 全パッケージに対して実行
 pnpm test        # 全パッケージに対して実行
 pnpm lint
-pnpm build       # パッケージごとに dist/ を出力（native プラグインは通常の npm パッケージとしてビルドする）
+pnpm build       # パッケージごとに dist/ を出力（いずれも通常の npm パッケージとしてビルドする）
 ```
 
 特定パッケージだけ実行するには `pnpm --filter @emdash-notion/sync <script>`、または `cd packages/sync && pnpm <script>` を使う。

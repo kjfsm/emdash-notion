@@ -2,10 +2,10 @@
 
 日本語版は [README.ja.md](./README.ja.md) を参照してください。
 
-A pnpm monorepo of two **native [EmDash CMS](https://emdashcms.com) plugins** that receive Notion webhooks, convert pages to [Portable Text](https://github.com/portabletext/portabletext), and sync them into EmDash content (Notion → EmDash, one-way). MVP.
+A pnpm monorepo that receives Notion webhooks, converts pages to [Portable Text](https://github.com/portabletext/portabletext), and syncs them into [EmDash CMS](https://emdashcms.com) content (Notion → EmDash, one-way). MVP. Two plugins split sync logic from rendering.
 
-- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync), plugin id: `notion-sync`. Fetches from Notion, converts to Portable Text, and writes to EmDash content.
-- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks), plugin id: `notion-blocks`. Renders Notion-specific blocks (callout, to-do, toggle) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
+- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync), plugin id: `notion-sync` (**standard** format). Fetches from Notion, converts to Portable Text, and writes to EmDash content.
+- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks), plugin id: `notion-blocks` (**native** format). Renders Notion-specific blocks (callout, to-do, toggle) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
 
 > The admin UI (`notion-sync`) is available in **English (default)** and **Japanese**, switchable from the settings page.
 
@@ -32,7 +32,7 @@ A pnpm monorepo of two **native [EmDash CMS](https://emdashcms.com) plugins** th
 
 ## Setup
 
-1. Register both plugins in `astro.config.mjs` (native only — works under `plugins: []`, **not** `sandboxed: []`):
+1. Register both plugins in `astro.config.mjs` (`notion-blocks` is native format, so it only works under `plugins: []`. `notion-sync` is standard format but is registered in the same `plugins: []` for now):
 
    ```typescript
    import { defineConfig } from "astro/config";
@@ -68,7 +68,7 @@ A pnpm monorepo of two **native [EmDash CMS](https://emdashcms.com) plugins** th
 
 ## Distribution
 
-Both are **native** EmDash plugins (one declares API routes, the other a `componentsEntry`), so they are distributed on **npm** and installed in `astro.config.mjs` (neither is eligible for the EmDash Marketplace, which is for sandboxed plugins).
+`notion-blocks` is a **native** EmDash plugin (it declares a `componentsEntry`), so it isn't eligible for the EmDash Marketplace, which is for sandboxed plugins. `notion-sync` is **standard**, but since it's meant to be paired with `notion-blocks`, both are distributed on **npm** and installed in `astro.config.mjs`.
 
 ## Development
 
@@ -79,7 +79,7 @@ pnpm install
 pnpm typecheck   # runs across all packages
 pnpm test        # runs across all packages
 pnpm lint
-pnpm build       # emits dist/ per package (native plugins build as normal npm packages)
+pnpm build       # emits dist/ per package (both build as normal npm packages)
 ```
 
 Run a script for a single package with `pnpm --filter @emdash-notion/sync <script>`, or `cd packages/sync && pnpm <script>`.

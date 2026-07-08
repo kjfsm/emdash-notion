@@ -1,4 +1,5 @@
 import type { PluginContext } from "emdash";
+import type { SandboxedRouteContext } from "emdash/plugin";
 
 /** Map で裏打ちした最小 StorageCollection。テストで必要なメソッドのみ実装する。 */
 export function mapStorage() {
@@ -169,9 +170,13 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 /**
- * native のルートハンドラは単一引数 `RouteContext`（`input`/`request` を `PluginContext` に
- * マージした形）を受け取る。テスト用に同じ形を組み立てる。
+ * standard format のルートハンドラは `(routeCtx, ctx)` の 2 引数を受け取る。
+ * `handleXxx(...withRoute(ctx, input, url))` の形でスプレッドして渡す。
  */
-export function withRoute<T extends object>(ctx: PluginContext, input: unknown, url: string): T {
-  return { ...ctx, input, request: { url } } as unknown as T;
+export function withRoute(
+  ctx: PluginContext,
+  input: unknown,
+  url: string,
+): [SandboxedRouteContext, PluginContext] {
+  return [{ input, request: { url, method: "POST", headers: {} } }, ctx];
 }
