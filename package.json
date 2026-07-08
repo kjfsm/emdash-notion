@@ -30,7 +30,7 @@
     "version:snapshot": "changeset version --snapshot canary",
     "release": "pnpm -r build && changeset publish",
     "release:snapshot": "changeset publish --tag canary --no-git-tag",
-    "release:local": "pnpm -r publish --no-git-checks --config.provenance=false"
+    "release:local": "pnpm -r --if-present run release:local"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",
