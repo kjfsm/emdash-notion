@@ -1,6 +1,6 @@
 import type { PluginContext } from "emdash";
 
-import type { ImageResolver } from "../portable-text/from-notion.js";
+import type { FileResolver, ImageResolver } from "../portable-text/from-notion.js";
 
 /**
  * Notion 画像を emdash メディアへ取り込む ImageResolver を作る。
@@ -28,6 +28,39 @@ export function createImageResolver(ctx: PluginContext): ImageResolver {
       return { ref: uploaded.mediaId, url: uploaded.url };
     } catch (err) {
       ctx.log.warn("notion image import failed", { url, error: String(err) });
+      return { ref: url, url };
+    }
+  };
+}
+
+/**
+ * Notion の file/pdf ブロックの署名付き URL（約1時間で失効）を emdash メディアへ取り込む
+ * FileResolver を作る。ロジックは createImageResolver とほぼ同じだが、video/audio は
+ * サイズが大きく Worker の実行時間・メモリを圧迫しうるため対象外とし、呼び出し側
+ * （from-notion.ts の convertFile）が file/pdf にのみ resolver を渡す。
+ */
+export function createFileResolver(ctx: PluginContext): FileResolver {
+  return async ({ url, filename }) => {
+    const media = ctx.media;
+    const http = ctx.http;
+    if (!media?.upload || !http) return { ref: url, url };
+
+    try {
+      const res = await http.fetch(url, { method: "GET" });
+      if (!res.ok) {
+        ctx.log.warn("notion file fetch failed", { url, status: res.status });
+        return { ref: url, url };
+      }
+      const contentType = res.headers.get("Content-Type") ?? "application/octet-stream";
+      const bytes = await res.arrayBuffer();
+      const uploaded = await media.upload(
+        filename ?? deriveFilename(url, "", contentType),
+        contentType,
+        bytes,
+      );
+      return { ref: uploaded.mediaId, url: uploaded.url };
+    } catch (err) {
+      ctx.log.warn("notion file import failed", { url, error: String(err) });
       return { ref: url, url };
     }
   };

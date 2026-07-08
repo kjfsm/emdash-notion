@@ -39,7 +39,10 @@
       "import": "./dist/notion-color.mjs"
     },
     "./astro": "./src/astro/index.ts",
+    "./NotionBookmark.astro": "./src/NotionBookmark.astro",
     "./NotionCallout.astro": "./src/NotionCallout.astro",
+    "./NotionDivider.astro": "./src/NotionDivider.astro",
+    "./NotionEquation.astro": "./src/NotionEquation.astro",
     "./NotionToggle.astro": "./src/NotionToggle.astro",
     "./NotionTodo.astro": "./src/NotionTodo.astro"
   },

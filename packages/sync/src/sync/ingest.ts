@@ -1,7 +1,8 @@
 import type { PluginContext } from "emdash";
 
 import { findMappingForParent, isConfigReady, loadConfig } from "../config.js";
-import { createImageResolver } from "../media/resolve.js";
+import { createOgpFetcher } from "../media/ogp.js";
+import { createFileResolver, createImageResolver } from "../media/resolve.js";
 import { NotionClient } from "../notion/client.js";
 import { fetchPage } from "../notion/fetch-page.js";
 import { mapProperties } from "../notion/properties.js";
@@ -46,6 +47,8 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
   });
   const { blocks: body, unsupported } = await notionBlocksToPortableText(blocks, {
     resolveImage: createImageResolver(ctx),
+    resolveFile: createFileResolver(ctx),
+    fetchOgp: createOgpFetcher(ctx),
   });
   if (unsupported.length > 0) {
     ctx.log.info("unsupported notion block types skipped", { pageId, types: unsupported });

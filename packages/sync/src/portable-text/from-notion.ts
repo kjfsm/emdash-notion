@@ -2,13 +2,21 @@ import type { NotionBlock, NotionRichText } from "../notion/types.js";
 import { makeKeyGen } from "./keys.js";
 import { richTextToInline } from "./rich-text.js";
 import type {
+  NotionBookmarkBlock,
   NotionCalloutBlock,
   NotionCalloutIcon,
+  NotionEquationBlock,
   NotionTodoBlock,
   NotionToggleBlock,
   PortableTextBlock,
+  PortableTextColumnBlock,
+  PortableTextColumnsBlock,
+  PortableTextEmbedBlock,
+  PortableTextFileBlock,
   PortableTextImage,
   PortableTextNode,
+  PortableTextTableBlock,
+  PortableTextTableRow,
 } from "./types.js";
 
 export interface ImageRef {
@@ -23,10 +31,31 @@ export type ImageResolver = (image: {
   blockId: string;
 }) => Promise<ImageRef>;
 
+/** file/pdf の署名付き URL を emdash メディアへ取り込む。video/audio には使わない（media/resolve.ts 参照）。 */
+export type FileResolver = (file: {
+  url: string;
+  filename?: string;
+  blockId: string;
+}) => Promise<ImageRef>;
+
+export interface OgpData {
+  title?: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
+}
+
+/** bookmark/link_preview の OGP メタデータを取得する。失敗時は undefined を返す。 */
+export type OgpFetcher = (url: string) => Promise<OgpData | undefined>;
+
 export interface ConvertOptions {
   keygen?: () => string;
   /** 画像を emdash メディアへ取り込む。未指定なら元 URL をそのまま参照する。 */
   resolveImage?: ImageResolver;
+  /** file/pdf を emdash メディアへ取り込む。未指定なら元 URL をそのまま参照する。 */
+  resolveFile?: FileResolver;
+  /** bookmark/link_preview の OGP メタデータを取得する。未指定なら url/caption のみで表示する。 */
+  fetchOgp?: OgpFetcher;
 }
 
 export interface ConvertResult {
@@ -62,6 +91,13 @@ interface NotionHeadingPayload {
   is_toggleable?: boolean;
 }
 
+/** 各種外部依存 resolver をまとめて引き回すための束（引数の肥大化を避ける）。 */
+interface Resolvers {
+  resolveImage: ImageResolver | undefined;
+  resolveFile: FileResolver | undefined;
+  fetchOgp: OgpFetcher | undefined;
+}
+
 /** Notion ブロックツリーを Portable Text ノード配列へ変換する。 */
 export async function notionBlocksToPortableText(
   blocks: NotionBlock[],
@@ -70,7 +106,12 @@ export async function notionBlocksToPortableText(
   const keygen = options.keygen ?? makeKeyGen();
   const unsupported = new Set<string>();
   const out: PortableTextNode[] = [];
-  await walk(blocks, 1, out, keygen, options.resolveImage, unsupported);
+  const resolvers: Resolvers = {
+    resolveImage: options.resolveImage,
+    resolveFile: options.resolveFile,
+    fetchOgp: options.fetchOgp,
+  };
+  await walk(blocks, 1, out, keygen, resolvers, unsupported);
   return { blocks: out, unsupported: [...unsupported] };
 }
 
@@ -79,11 +120,11 @@ async function walk(
   level: number,
   out: PortableTextNode[],
   keygen: () => string,
-  resolveImage: ImageResolver | undefined,
+  resolvers: Resolvers,
   unsupported: Set<string>,
 ): Promise<void> {
   for (const block of blocks) {
-    await convertBlock(block, level, out, keygen, resolveImage, unsupported);
+    await convertBlock(block, level, out, keygen, resolvers, unsupported);
   }
 }
 
@@ -91,11 +132,11 @@ async function walk(
 async function convertChildren(
   blocks: NotionBlock[],
   keygen: () => string,
-  resolveImage: ImageResolver | undefined,
+  resolvers: Resolvers,
   unsupported: Set<string>,
 ): Promise<PortableTextNode[]> {
   const nested: PortableTextNode[] = [];
-  await walk(blocks, 1, nested, keygen, resolveImage, unsupported);
+  await walk(blocks, 1, nested, keygen, resolvers, unsupported);
   return nested;
 }
 
@@ -104,7 +145,7 @@ async function convertBlock(
   level: number,
   out: PortableTextNode[],
   keygen: () => string,
-  resolveImage: ImageResolver | undefined,
+  resolvers: Resolvers,
   unsupported: Set<string>,
 ): Promise<void> {
   const type = block.type;
@@ -125,7 +166,7 @@ async function convertBlock(
         }),
       );
       // トグル見出しの子は通常ブロックとして続けて出力する。
-      await walk(block.children ?? [], level, out, keygen, resolveImage, unsupported);
+      await walk(block.children ?? [], level, out, keygen, resolvers, unsupported);
       return;
     }
     case "quote": {
@@ -138,17 +179,17 @@ async function convertBlock(
     }
     case "bulleted_list_item": {
       out.push(listBlock("bullet", level, data?.rich_text ?? [], keygen));
-      await walk(block.children ?? [], level + 1, out, keygen, resolveImage, unsupported);
+      await walk(block.children ?? [], level + 1, out, keygen, resolvers, unsupported);
       return;
     }
     case "to_do": {
       out.push(todoBlock(data as NotionTodoPayload | undefined, level, keygen));
-      await walk(block.children ?? [], level + 1, out, keygen, resolveImage, unsupported);
+      await walk(block.children ?? [], level + 1, out, keygen, resolvers, unsupported);
       return;
     }
     case "numbered_list_item": {
       out.push(listBlock("number", level, data?.rich_text ?? [], keygen));
-      await walk(block.children ?? [], level + 1, out, keygen, resolveImage, unsupported);
+      await walk(block.children ?? [], level + 1, out, keygen, resolvers, unsupported);
       return;
     }
     case "toggle": {
@@ -157,7 +198,7 @@ async function convertBlock(
           data?.rich_text ?? [],
           block.children ?? [],
           keygen,
-          resolveImage,
+          resolvers,
           unsupported,
         ),
       );
@@ -178,8 +219,48 @@ async function convertBlock(
       break;
     }
     case "image": {
-      const img = await convertImage(block, keygen, resolveImage);
+      const img = await convertImage(block, keygen, resolvers.resolveImage);
       if (img) out.push(img);
+      break;
+    }
+    case "table": {
+      const table = convertTable(block, keygen);
+      if (table) out.push(table);
+      // table_row は table 側で畳み込み済みのため、共通 walk には流さない。
+      return;
+    }
+    case "column_list": {
+      const columns = await convertColumns(block, keygen, resolvers, unsupported);
+      if (columns) out.push(columns);
+      // column は column_list 側で畳み込み済みのため、共通 walk には流さない。
+      return;
+    }
+    case "equation": {
+      const equation = convertEquation(block, keygen);
+      if (equation) out.push(equation);
+      break;
+    }
+    case "video":
+    case "audio": {
+      const embed = convertMediaEmbed(block, type, keygen);
+      if (embed) out.push(embed);
+      break;
+    }
+    case "file":
+    case "pdf": {
+      const file = await convertFile(block, keygen, resolvers.resolveFile);
+      if (file) out.push(file);
+      break;
+    }
+    case "embed": {
+      const embed = convertEmbed(block, keygen);
+      if (embed) out.push(embed);
+      break;
+    }
+    case "bookmark":
+    case "link_preview": {
+      const bookmark = await convertBookmark(block, type, keygen, resolvers.fetchOgp);
+      if (bookmark) out.push(bookmark);
       break;
     }
     default: {
@@ -188,13 +269,13 @@ async function convertBlock(
       if (data?.rich_text && data.rich_text.length > 0) {
         out.push(textBlock("normal", data.rich_text, keygen));
       }
-      await walk(block.children ?? [], level, out, keygen, resolveImage, unsupported);
+      await walk(block.children ?? [], level, out, keygen, resolvers, unsupported);
       return;
     }
   }
 
   // リスト・見出し以外で子を持つ場合も取りこぼさない。
-  await walk(block.children ?? [], level, out, keygen, resolveImage, unsupported);
+  await walk(block.children ?? [], level, out, keygen, resolvers, unsupported);
 }
 
 function textBlock(
@@ -261,11 +342,11 @@ async function toggleBlock(
   richText: NotionRichText[],
   children: NotionBlock[],
   keygen: () => string,
-  resolveImage: ImageResolver | undefined,
+  resolvers: Resolvers,
   unsupported: Set<string>,
 ): Promise<NotionToggleBlock> {
   const { children: spans, markDefs } = richTextToInline(richText, keygen);
-  const content = await convertChildren(children, keygen, resolveImage, unsupported);
+  const content = await convertChildren(children, keygen, resolvers, unsupported);
   return { _type: "notionToggle", _key: keygen(), children: spans, markDefs, content };
 }
 
@@ -295,5 +376,166 @@ async function convertImage(
     _key: keygen(),
     asset: { _type: "reference", _ref: resolved.ref, url: resolved.url ?? url },
     alt: alt || undefined,
+  };
+}
+
+/** Notion のブロック数式を生の LaTeX 文字列のまま notionEquation に変換する（KaTeX 等は使わない）。 */
+function convertEquation(block: NotionBlock, keygen: () => string): NotionEquationBlock | null {
+  const equation = block.equation as { expression?: string } | undefined;
+  if (!equation?.expression) return null;
+  return { _type: "notionEquation", _key: keygen(), expression: equation.expression };
+}
+
+interface NotionTablePayload {
+  has_column_header?: boolean;
+  has_row_header?: boolean;
+}
+
+interface NotionTableRowPayload {
+  cells?: NotionRichText[][];
+}
+
+/**
+ * Notion の table/table_row を emdash コア標準の table 形状へ変換する。
+ * has_column_header は先頭行を thead に分離する `hasHeaderRow` に、has_row_header は
+ * 各行の先頭セルの `isHeader` にマッピングする（emdash の Table コンポーネントはセル単位で
+ * isHeader を持てるため、行ヘッダー・列ヘッダーの両方をこの形状だけで表現できる）。
+ */
+function convertTable(block: NotionBlock, keygen: () => string): PortableTextTableBlock | null {
+  const table = block.table as NotionTablePayload | undefined;
+  const rowBlocks = (block.children ?? []).filter((c) => c.type === "table_row");
+  if (rowBlocks.length === 0) return null;
+
+  const rows: PortableTextTableRow[] = rowBlocks.map((rowBlock) => {
+    const cells = (rowBlock.table_row as NotionTableRowPayload | undefined)?.cells ?? [];
+    return {
+      _type: "tableRow",
+      _key: keygen(),
+      cells: cells.map((cell, cellIndex) => {
+        const { children, markDefs } = richTextToInline(cell, keygen);
+        return {
+          _type: "tableCell",
+          _key: keygen(),
+          content: children,
+          markDefs: markDefs.length > 0 ? markDefs : undefined,
+          isHeader: (table?.has_row_header && cellIndex === 0) || undefined,
+        };
+      }),
+    };
+  });
+
+  return {
+    _type: "table",
+    _key: keygen(),
+    rows,
+    hasHeaderRow: table?.has_column_header || undefined,
+  };
+}
+
+/**
+ * Notion の column_list/column を emdash コア標準の columns 形状へ変換する。
+ * Notion API は列幅比率（width_ratio）を公開しないため width は設定しない。
+ */
+async function convertColumns(
+  block: NotionBlock,
+  keygen: () => string,
+  resolvers: Resolvers,
+  unsupported: Set<string>,
+): Promise<PortableTextColumnsBlock | null> {
+  const columnBlocks = (block.children ?? []).filter((c) => c.type === "column");
+  if (columnBlocks.length === 0) return null;
+
+  const columns: PortableTextColumnBlock[] = [];
+  for (const col of columnBlocks) {
+    const content = await convertChildren(col.children ?? [], keygen, resolvers, unsupported);
+    columns.push({ _type: "column", _key: keygen(), content });
+  }
+
+  return { _type: "columns", _key: keygen(), columns };
+}
+
+interface NotionMediaPayload {
+  type?: string;
+  external?: { url: string };
+  file?: { url: string; name?: string };
+  caption?: NotionRichText[];
+}
+
+/**
+ * Notion の video/audio を emdash コア標準の embed 形状（`provider` 指定でセルフホスト扱い）へ変換する。
+ * サイズが大きく Worker の実行時間・メモリを圧迫しうるため resolver は通さず、元 URL
+ * （file 型の場合は Notion の署名付き URL で約1時間後に失効する）をそのまま参照する。
+ */
+function convertMediaEmbed(
+  block: NotionBlock,
+  kind: "video" | "audio",
+  keygen: () => string,
+): PortableTextEmbedBlock | null {
+  const payload = block[kind] as NotionMediaPayload | undefined;
+  const url = payload?.external?.url ?? payload?.file?.url;
+  if (!url) return null;
+  const caption = (payload?.caption ?? []).map((rt) => rt.plain_text).join("");
+  return { _type: "embed", _key: keygen(), url, provider: kind, caption: caption || undefined };
+}
+
+/**
+ * Notion の file/pdf を emdash コア標準の file 形状へ変換する。file 型（Notion の署名付き URL、
+ * 約1時間で失効）のときだけ resolveFile で emdash メディアへ永続化し、失敗時は元 URL へフォールバックする。
+ */
+async function convertFile(
+  block: NotionBlock,
+  keygen: () => string,
+  resolveFile: FileResolver | undefined,
+): Promise<PortableTextFileBlock | null> {
+  const type = block.type as "file" | "pdf";
+  const payload = block[type] as NotionMediaPayload | undefined;
+  const url = payload?.external?.url ?? payload?.file?.url;
+  if (!url) return null;
+
+  const shouldPersist = payload?.type === "file" && resolveFile;
+  const resolved = shouldPersist
+    ? await resolveFile({ url, filename: payload?.file?.name, blockId: block.id })
+    : null;
+
+  return {
+    _type: "file",
+    _key: keygen(),
+    url: resolved?.url ?? url,
+    filename: payload?.file?.name,
+  };
+}
+
+/** Notion の embed（任意 URL）を emdash コア標準の embed 形状へ変換する。YouTube/Vimeo 自動判定・
+ * プレーンリンクへのフォールバックは emdash 側の Embed コンポーネントが内蔵しているため変換は薄く済む。 */
+function convertEmbed(block: NotionBlock, keygen: () => string): PortableTextEmbedBlock | null {
+  const payload = block.embed as { url?: string; caption?: NotionRichText[] } | undefined;
+  if (!payload?.url) return null;
+  const caption = (payload.caption ?? []).map((rt) => rt.plain_text).join("");
+  return { _type: "embed", _key: keygen(), url: payload.url, caption: caption || undefined };
+}
+
+/**
+ * Notion の bookmark/link_preview を OGP メタデータ付きカードへ変換する。fetchOgp 未指定・失敗時は
+ * og が undefined になり、url/caption のみの簡易表示（NotionBookmark.astro）にフォールバックする。
+ */
+async function convertBookmark(
+  block: NotionBlock,
+  kind: "bookmark" | "link_preview",
+  keygen: () => string,
+  fetchOgp: OgpFetcher | undefined,
+): Promise<NotionBookmarkBlock | null> {
+  const payload = block[kind] as { url?: string; caption?: NotionRichText[] } | undefined;
+  if (!payload?.url) return null;
+  const { children: caption, markDefs } = richTextToInline(payload.caption ?? [], keygen);
+  const og = fetchOgp ? await fetchOgp(payload.url).catch(() => undefined) : undefined;
+
+  return {
+    _type: "notionBookmark",
+    _key: keygen(),
+    kind,
+    url: payload.url,
+    caption: caption.length > 0 ? caption : undefined,
+    markDefs: markDefs.length > 0 ? markDefs : undefined,
+    og,
   };
 }

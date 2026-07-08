@@ -3,11 +3,17 @@ import { describe, expect, it } from "vitest";
 import type { NotionBlock, NotionRichText } from "../src/notion/types.js";
 import { notionBlocksToPortableText } from "../src/portable-text/from-notion.js";
 import type {
+  NotionBookmarkBlock,
   NotionCalloutBlock,
+  NotionEquationBlock,
   NotionTodoBlock,
   NotionToggleBlock,
   PortableTextBlock,
+  PortableTextColumnsBlock,
+  PortableTextEmbedBlock,
+  PortableTextFileBlock,
   PortableTextImage,
+  PortableTextTableBlock,
 } from "../src/portable-text/types.js";
 
 function rt(text: string, opts: { bold?: boolean; href?: string } = {}): NotionRichText {
@@ -184,5 +190,166 @@ describe("notionBlocksToPortableText", () => {
     ]);
     expect(blocks).toHaveLength(0);
     expect(unsupported).toContain("table_of_contents");
+  });
+
+  it("table を emdash 標準の table 形状に変換する（列ヘッダー・行ヘッダーともに）", async () => {
+    const { blocks, unsupported } = await notionBlocksToPortableText([
+      block("tbl", "table", { has_column_header: true, has_row_header: true }, [
+        block("r1", "table_row", { cells: [[rt("見出しA")], [rt("見出しB")]] }),
+        block("r2", "table_row", { cells: [[rt("行見出し")], [rt("値")]] }),
+      ]),
+    ]);
+    expect(blocks).toHaveLength(1);
+    const table = blocks[0] as PortableTextTableBlock;
+    expect(table._type).toBe("table");
+    expect(table.hasHeaderRow).toBe(true);
+    expect(table.rows).toHaveLength(2);
+    expect(table.rows[0]!.cells[0]!.content[0]!.text).toBe("見出しA");
+    // has_row_header により各行の先頭セルが isHeader になる。
+    expect(table.rows[0]!.cells[0]!.isHeader).toBe(true);
+    expect(table.rows[0]!.cells[1]!.isHeader).toBeUndefined();
+    expect(table.rows[1]!.cells[0]!.isHeader).toBe(true);
+    // table_row が unsupported に混入しない。
+    expect(unsupported).not.toContain("table_row");
+  });
+
+  it("table にヘッダー指定が無ければ hasHeaderRow/isHeader を省略する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("tbl", "table", { has_column_header: false, has_row_header: false }, [
+        block("r1", "table_row", { cells: [[rt("a")], [rt("b")]] }),
+      ]),
+    ]);
+    const table = blocks[0] as PortableTextTableBlock;
+    expect(table.hasHeaderRow).toBeUndefined();
+    expect(table.rows[0]!.cells[0]!.isHeader).toBeUndefined();
+  });
+
+  it("column_list + column を emdash 標準の columns 形状に変換する", async () => {
+    const { blocks, unsupported } = await notionBlocksToPortableText([
+      block("cl", "column_list", {}, [
+        block("c1", "column", {}, [block("p1", "paragraph", { rich_text: [rt("左")] })]),
+        block("c2", "column", {}, [block("p2", "paragraph", { rich_text: [rt("右")] })]),
+      ]),
+    ]);
+    expect(blocks).toHaveLength(1);
+    const columns = blocks[0] as PortableTextColumnsBlock;
+    expect(columns._type).toBe("columns");
+    expect(columns.columns).toHaveLength(2);
+    expect((columns.columns[0]!.content[0] as PortableTextBlock).children[0]!.text).toBe("左");
+    expect((columns.columns[1]!.content[0] as PortableTextBlock).children[0]!.text).toBe("右");
+    expect(unsupported).not.toContain("column");
+  });
+
+  it("equation ブロックを生の LaTeX 文字列のまま notionEquation に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("eq", "equation", { expression: "a^2 + b^2 = c^2" }),
+    ]);
+    const equation = blocks[0] as NotionEquationBlock;
+    expect(equation._type).toBe("notionEquation");
+    expect(equation.expression).toBe("a^2 + b^2 = c^2");
+  });
+
+  it("video/audio を emdash 標準の embed 形状（provider 指定）に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("v", "video", { type: "external", external: { url: "https://e.com/v.mp4" } }),
+      block("a", "audio", { type: "external", external: { url: "https://e.com/a.mp3" } }),
+    ]);
+    expect(blocks[0]).toMatchObject({
+      _type: "embed",
+      url: "https://e.com/v.mp4",
+      provider: "video",
+    });
+    expect(blocks[1]).toMatchObject({
+      _type: "embed",
+      url: "https://e.com/a.mp3",
+      provider: "audio",
+    });
+  });
+
+  it("file（resolveFile あり）を emdash 標準の file 形状に、URL を永続化して変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText(
+      [
+        block("f", "file", {
+          type: "file",
+          file: { url: "https://files/doc.pdf", name: "doc.pdf" },
+        }),
+      ],
+      { resolveFile: async () => ({ ref: "media_1", url: "https://cdn/doc.pdf" }) },
+    );
+    const file = blocks[0] as PortableTextFileBlock;
+    expect(file._type).toBe("file");
+    expect(file.url).toBe("https://cdn/doc.pdf");
+    expect(file.filename).toBe("doc.pdf");
+  });
+
+  it("file（resolveFile 未指定）は元 URL のまま変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("f", "file", { type: "file", file: { url: "https://files/doc.pdf" } }),
+    ]);
+    expect((blocks[0] as PortableTextFileBlock).url).toBe("https://files/doc.pdf");
+  });
+
+  it("pdf を emdash 標準の file 形状に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("p", "pdf", { type: "external", external: { url: "https://e.com/x.pdf" } }),
+    ]);
+    expect(blocks[0]).toMatchObject({ _type: "file", url: "https://e.com/x.pdf" });
+  });
+
+  it("embed（Notion の任意 URL）を emdash 標準の embed 形状に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("e", "embed", { url: "https://youtu.be/dQw4w9WgXcQ", caption: [rt("caption")] }),
+    ]);
+    const embed = blocks[0] as PortableTextEmbedBlock;
+    expect(embed._type).toBe("embed");
+    expect(embed.url).toBe("https://youtu.be/dQw4w9WgXcQ");
+    expect(embed.provider).toBeUndefined();
+    expect(embed.caption).toBe("caption");
+  });
+
+  it("bookmark を fetchOgp の結果付きで notionBookmark に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText(
+      [block("b", "bookmark", { url: "https://e.com", caption: [rt("cap")] })],
+      {
+        fetchOgp: async () => ({
+          title: "Example",
+          description: "desc",
+          image: "https://e.com/og.png",
+        }),
+      },
+    );
+    const bookmark = blocks[0] as NotionBookmarkBlock;
+    expect(bookmark._type).toBe("notionBookmark");
+    expect(bookmark.kind).toBe("bookmark");
+    expect(bookmark.og).toEqual({
+      title: "Example",
+      description: "desc",
+      image: "https://e.com/og.png",
+    });
+    expect(bookmark.caption?.[0]!.text).toBe("cap");
+  });
+
+  it("bookmark は fetchOgp 未指定・失敗時は og が undefined のまま変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("b", "bookmark", { url: "https://e.com" }),
+    ]);
+    expect((blocks[0] as NotionBookmarkBlock).og).toBeUndefined();
+
+    const { blocks: failed } = await notionBlocksToPortableText(
+      [block("b2", "bookmark", { url: "https://e.com" })],
+      {
+        fetchOgp: async () => {
+          throw new Error("network error");
+        },
+      },
+    );
+    expect((failed[0] as NotionBookmarkBlock).og).toBeUndefined();
+  });
+
+  it("link_preview も kind: link_preview で notionBookmark に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("lp", "link_preview", { url: "https://e.com" }),
+    ]);
+    expect((blocks[0] as NotionBookmarkBlock).kind).toBe("link_preview");
   });
 });
