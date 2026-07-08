@@ -1,6 +1,6 @@
 {
   "name": "@emdash-notion/sync",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks — a standard-format EmDash plugin (Notion → EmDash)",
   "keywords": [
     "astro",
