@@ -1,5 +1,5 @@
 /**
- * Notion REST API のレスポンスのうち、emdash-notion が実際に読む部分だけを写した最小型。
+ * Notion REST API のレスポンスのうち、notion-sync が実際に読む部分だけを写した最小型。
  * `@notionhq/client` に依存すると sandbox バンドルが重くなるため、自前で定義して自己完結させる。
  */
 
@@ -63,7 +63,7 @@ export interface NotionDatabaseTitleFragment {
   plain_text: string;
 }
 
-/** データベース（data source）のスキーマ。emdash-notion が読む部分のみ。 */
+/** データベース（data source）のスキーマ。notion-sync が読む部分のみ。 */
 export interface NotionDatabase {
   object: "database";
   id: string;
@@ -78,7 +78,7 @@ export interface NotionListResponse<T> {
   has_more: boolean;
 }
 
-/** Notion 公式 Webhook のイベントペイロード（emdash-notion が読む部分のみ）。 */
+/** Notion 公式 Webhook のイベントペイロード（notion-sync が読む部分のみ）。 */
 export interface NotionWebhookPayload {
   /** 購読作成時のハンドシェイク。存在すればイベントではなく検証リクエスト。 */
   verification_token?: string;

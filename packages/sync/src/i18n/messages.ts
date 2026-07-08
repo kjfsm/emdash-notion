@@ -82,7 +82,7 @@ export interface Messages {
 }
 
 const en: Messages = {
-  pageTitle: "emdash-notion — Notion sync settings",
+  pageTitle: "notion-sync — Notion sync settings",
   pageIntro: "Follow the steps: ① Save tokens → ② Add/edit mappings → ③ Try a manual fetch.",
   languageLabel: "Language",
 
@@ -160,7 +160,7 @@ const en: Messages = {
 };
 
 const ja: Messages = {
-  pageTitle: "emdash-notion — Notion 同期設定",
+  pageTitle: "notion-sync — Notion 同期設定",
   pageIntro: "① トークンを保存 → ② 対応を追加/編集 → ③ 手動取得で試す、の順に進めてください。",
   languageLabel: "言語 / Language",
 

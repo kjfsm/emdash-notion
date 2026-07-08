@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type { NotionBlock, NotionRichText } from "../src/notion/types.js";
 import { notionBlocksToPortableText } from "../src/portable-text/from-notion.js";
-import type { PortableTextBlock, PortableTextImage } from "../src/portable-text/types.js";
+import type {
+  NotionCalloutBlock,
+  NotionTodoBlock,
+  NotionToggleBlock,
+  PortableTextBlock,
+  PortableTextImage,
+} from "../src/portable-text/types.js";
 
 function rt(text: string, opts: { bold?: boolean; href?: string } = {}): NotionRichText {
   return {
@@ -91,6 +97,67 @@ describe("notionBlocksToPortableText", () => {
     ]);
     expect((blocks[0] as PortableTextBlock).style).toBe("blockquote");
     expect(blocks[1]).toMatchObject({ _type: "divider" });
+  });
+
+  it("callout を notionCallout に、色とアイコンを保持して変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("co", "callout", {
+        rich_text: [rt("heads up")],
+        icon: { type: "emoji", emoji: "💡" },
+        color: "gray_background",
+      }),
+    ]);
+    expect(blocks).toHaveLength(1);
+    const callout = blocks[0] as NotionCalloutBlock;
+    expect(callout._type).toBe("notionCallout");
+    expect(callout.children.map((c) => c.text)).toEqual(["heads up"]);
+    expect(callout.icon).toEqual({ type: "emoji", emoji: "💡" });
+    expect(callout.color).toBe("gray_background");
+  });
+
+  it("callout の色が default のときは color を省略する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("co", "callout", { rich_text: [rt("plain")], color: "default" }),
+    ]);
+    expect((blocks[0] as NotionCalloutBlock).color).toBeUndefined();
+  });
+
+  it("to_do を notionTodo に、チェック状態を保持して変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("t1", "to_do", { rich_text: [rt("parent")], checked: true }, [
+        block("t2", "to_do", { rich_text: [rt("child")], checked: false }),
+      ]),
+    ]);
+    expect(blocks).toHaveLength(2);
+    const [parent, child] = blocks as NotionTodoBlock[];
+    expect(parent!._type).toBe("notionTodo");
+    expect(parent!.checked).toBe(true);
+    expect(parent!.level).toBe(1);
+    expect(child!.checked).toBe(false);
+    expect(child!.level).toBe(2);
+  });
+
+  it("toggle を notionToggle に、子ブロックを content として入れ子保持して変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("tg", "toggle", { rich_text: [rt("Details")] }, [
+        block("p", "paragraph", { rich_text: [rt("inner")] }),
+      ]),
+    ]);
+    expect(blocks).toHaveLength(1);
+    const toggle = blocks[0] as NotionToggleBlock;
+    expect(toggle._type).toBe("notionToggle");
+    expect(toggle.children.map((c) => c.text)).toEqual(["Details"]);
+    expect(toggle.content).toHaveLength(1);
+    expect((toggle.content[0] as PortableTextBlock).children[0]!.text).toBe("inner");
+  });
+
+  it("トグル見出しは style を保ったまま toggle: true を付与する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("h", "heading_2", { rich_text: [rt("Section")], is_toggleable: true }),
+    ]);
+    const heading = blocks[0] as PortableTextBlock;
+    expect(heading.style).toBe("h2");
+    expect(heading.toggle).toBe(true);
   });
 
   it("画像を resolver 経由でメディア参照に変換する", async () => {
