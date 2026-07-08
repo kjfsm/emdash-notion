@@ -1,0 +1,107 @@
+---
+import { PortableText } from "emdash/ui";
+
+export interface Props {
+  node: {
+    _key: string;
+    kind: "bookmark" | "link_preview";
+    url: string;
+    caption?: unknown[];
+    markDefs?: unknown[];
+    og?: {
+      title?: string;
+      description?: string;
+      image?: string;
+      siteName?: string;
+    };
+  };
+}
+
+const { node } = Astro.props;
+const captionBlock = node.caption
+  ? {
+      _type: "block" as const,
+      _key: `${node._key}-caption`,
+      style: "normal",
+      children: node.caption,
+      markDefs: node.markDefs ?? [],
+    }
+  : null;
+---
+
+<a class="notion-bookmark" href={node.url} target="_blank" rel="noopener noreferrer">
+  {
+    node.og ? (
+      <>
+        <div class="notion-bookmark__text">
+          <p class="notion-bookmark__title">{node.og.title ?? node.url}</p>
+          {node.og.description && <p class="notion-bookmark__desc">{node.og.description}</p>}
+          <p class="notion-bookmark__url">{node.og.siteName ?? node.url}</p>
+        </div>
+        {node.og.image && <img class="notion-bookmark__image" src={node.og.image} alt="" />}
+      </>
+    ) : (
+      <span class="notion-bookmark__fallback">{node.url}</span>
+    )
+  }
+</a>
+{captionBlock && (
+  <p class="notion-bookmark__caption">
+    <PortableText value={[captionBlock]} />
+  </p>
+)}
+
+<style>
+  .notion-bookmark {
+    display: flex;
+    border: 1px solid #e3e2e0;
+    border-radius: 6px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    margin: 1rem 0;
+  }
+
+  .notion-bookmark__text {
+    padding: 0.75rem 1rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .notion-bookmark__title {
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+  }
+
+  .notion-bookmark__desc {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0 0 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .notion-bookmark__url {
+    font-size: 0.75rem;
+    color: #999;
+    margin: 0;
+  }
+
+  .notion-bookmark__image {
+    width: 120px;
+    object-fit: cover;
+  }
+
+  .notion-bookmark__fallback {
+    padding: 0.75rem 1rem;
+  }
+
+  .notion-bookmark__caption {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+  }
+</style>

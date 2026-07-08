@@ -41,7 +41,13 @@ describe("createPlugin() native definition", () => {
     const definition = createPlugin();
     const blocks = definition.admin?.portableTextBlocks;
     expect(blocks).toBeDefined();
-    expect(blocks!.map((b) => b.type)).toEqual(["notionCallout", "notionTodo", "notionToggle"]);
+    expect(blocks!.map((b) => b.type)).toEqual([
+      "notionCallout",
+      "notionTodo",
+      "notionToggle",
+      "notionEquation",
+      "notionBookmark",
+    ]);
   });
 
   it("各ブロックはラベルとアイコンのみを宣言する（手動編集は非対応）", () => {
