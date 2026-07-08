@@ -48,7 +48,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "oxlint && eslint .",
-    "lint:fix": "oxlint --fix && eslint . --fix"
+    "lint:fix": "oxlint --fix && eslint . --fix",
+    "release:local": "pnpm publish --no-provenance --no-git-checks"
   },
   "devDependencies": {
     "@emdash-notion/types": "workspace:*",

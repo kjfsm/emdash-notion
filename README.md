@@ -2,14 +2,17 @@
 
 日本語版は [README.ja.md](./README.ja.md) を参照してください。
 
-A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion webhooks, converts pages to [Portable Text](https://github.com/portabletext/portabletext), and syncs them into EmDash content (Notion → EmDash, one-way). MVP.
+A pnpm monorepo of two **native [EmDash CMS](https://emdashcms.com) plugins** that receive Notion webhooks, convert pages to [Portable Text](https://github.com/portabletext/portabletext), and sync them into EmDash content (Notion → EmDash, one-way). MVP.
 
-> The admin UI is available in **English (default)** and **Japanese**, switchable from the settings page.
+- **[`packages/sync`](./packages/sync)** — npm: [`emdash-notion-sync`](https://www.npmjs.com/package/emdash-notion-sync), plugin id: `notion-sync`. Fetches from Notion, converts to Portable Text, and writes to EmDash content.
+- **[`packages/blocks`](./packages/blocks)** — npm: [`emdash-notion-blocks`](https://www.npmjs.com/package/emdash-notion-blocks), plugin id: `notion-blocks`. Renders Notion-specific blocks (callout, to-do, toggle) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
+
+> The admin UI (`notion-sync`) is available in **English (default)** and **Japanese**, switchable from the settings page.
 
 ## What it does
 
-- Receives Notion's official webhook at `/_emdash/api/plugins/emdash-notion/webhook` and fetches the target page
-- Converts the page body (headings, paragraphs, lists, quotes, code, dividers, images, etc.) to Portable Text
+- Receives Notion's official webhook at `/_emdash/api/plugins/notion-sync/webhook` and fetches the target page
+- Converts the page body (headings, paragraphs, lists, quotes, code, dividers, images, callouts, to-dos, toggles, etc.) to Portable Text — callout/to-do/toggle are kept as dedicated block types (`notionCallout`/`notionTodo`/`notionToggle`) so `notion-blocks` can render them with their original Notion styling (icon, color, checked state, collapsible content)
 - Imports images into EmDash media (Notion's signed image URLs expire after ~1 hour)
 - Maps title and body (Portable Text), plus optional properties such as author and slug, to EmDash fields
 - Supports multiple emdash-collection ⇔ Notion-database mappings
@@ -24,26 +27,31 @@ A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion web
 - The author/slug property dropdowns aggregate property names across **all** databases shared with the integration (not filtered to the selected row's database).
 - EmDash exposes no schema-introspection or raw-DB API to plugins (deliberately locked down). So the “emdash collection slug” is free text, and the title/body/author/slug field slugs are picked from a `list-fields` dropdown that reverse-engineers field names from the mapped collection's existing content. If a collection has no content yet, no candidates appear.
 - The body field slug defaults to `content` (matching EmDash's standard `pages`/`posts` seed). Author/slug field slugs default to blank (not synced); if set and the target collection lacks that field, only that field is skipped (a missing title/body field still errors).
+- **`notion-blocks` is optional but recommended.** Without it, `notionCallout`/`notionTodo`/`notionToggle` blocks are unknown `_type`s to EmDash's default Portable Text renderer and render as nothing (the text content is preserved in storage, just not shown until `notion-blocks` is installed).
+- Regular text color/background annotations (Notion's per-span highlight colors) are not yet converted — out of scope for now.
 
 ## Setup
 
-1. Register it in `astro.config.mjs` (native only — works under `plugins: []`, **not** `sandboxed: []`):
+1. Register both plugins in `astro.config.mjs` (native only — works under `plugins: []`, **not** `sandboxed: []`):
 
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { emdashNotionPlugin } from "emdash-notion";
+   import { notionSyncPlugin } from "emdash-notion-sync";
+   import { notionBlocksPlugin } from "emdash-notion-blocks";
 
    export default defineConfig({
      integrations: [
        emdash({
-         plugins: [emdashNotionPlugin()],
+         plugins: [notionSyncPlugin(), notionBlocksPlugin()],
        }),
      ],
    });
    ```
 
-2. Open the plugin's settings page from the EmDash admin (gear icon), and configure in order:
+   `notionBlocksPlugin()` only needs to be registered — it has no settings page. If you don't need Notion-styled callouts/to-dos/toggles, you can omit it.
+
+2. Open the `notion-sync` plugin's settings page from the EmDash admin (gear icon), and configure in order:
    1. **Language** — pick English or 日本語 (optional; English by default).
    2. **Save tokens** — enter the Notion integration token, then save. Afterwards the dropdowns query Notion with this token.
    3. **Generate EmDash token** — click "Generate EmDash token" to create a random webhook URL token (saved automatically) and show the full webhook URL to register in Notion. You can also enter your own value in the "Webhook URL token" field instead. Note this token is unrelated to the `verification_token` Notion sends once during subscription setup.
@@ -53,26 +61,39 @@ A **native [EmDash CMS](https://emdashcms.com) plugin** that receives Notion web
 3. Create a Notion webhook subscription pointed at the URL shown after generating the token:
 
    ```
-   https://<your-site>/_emdash/api/plugins/emdash-notion/webhook?token=<Webhook URL Token>
+   https://<your-site>/_emdash/api/plugins/notion-sync/webhook?token=<Webhook URL Token>
    ```
 
    The subscription handshake (`verification_token`) is echoed back automatically.
 
 ## Distribution
 
-This is a **native** EmDash plugin that declares API routes, so it is distributed on **npm** and installed in `astro.config.mjs` (it is not eligible for the EmDash Marketplace, which is for sandboxed plugins).
+Both are **native** EmDash plugins (one declares API routes, the other a `componentsEntry`), so they are distributed on **npm** and installed in `astro.config.mjs` (neither is eligible for the EmDash Marketplace, which is for sandboxed plugins).
 
 ## Development
 
+This is a pnpm workspace monorepo (`packages/*`, `shared/*`).
+
 ```sh
 pnpm install
-pnpm typecheck
-pnpm test
+pnpm typecheck   # runs across all packages
+pnpm test        # runs across all packages
 pnpm lint
-pnpm build   # emits to dist/ (a native plugin builds as a normal npm package)
+pnpm build       # emits dist/ per package (native plugins build as normal npm packages)
 ```
 
-Use `pnpm link` (or `pnpm link --global`) to reference it from a local EmDash site for verification.
+Run a script for a single package with `pnpm --filter emdash-notion-sync <script>`, or `cd packages/sync && pnpm <script>`.
+
+Use `pnpm link` (or `pnpm link --global`) to reference a package from a local EmDash site for verification.
+
+## Migrating from the single-package `emdash-notion`
+
+Earlier versions of this repo published a single `emdash-notion` package (plugin id `emdash-notion`). That package is deprecated in favor of `emdash-notion-sync` + `emdash-notion-blocks`. To migrate:
+
+1. Replace the `emdash-notion` dependency with `emdash-notion-sync` (and optionally `emdash-notion-blocks`).
+2. Update `astro.config.mjs` to register `notionSyncPlugin()` (and `notionBlocksPlugin()`) instead of `emdashNotionPlugin()`.
+3. Update the Notion webhook subscription URL: the path segment changes from `.../plugins/emdash-notion/webhook` to `.../plugins/notion-sync/webhook`.
+4. **Plugin storage is namespaced by plugin id**, so the existing Notion pageId ↔ EmDash contentId sync map (`ctx.storage.syncMap`) does not carry over to `notion-sync`. Because `ingest.ts` decides create-vs-update solely from that map, the first manual fetch after migrating will **re-create** every mapped page as new EmDash content rather than updating the existing entries. Delete the old EmDash entries before re-syncing, or map to a fresh collection, to avoid duplicates.
 
 ## License
 
