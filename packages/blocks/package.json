@@ -1,6 +1,6 @@
 {
   "name": "@emdash-notion/blocks",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Notion 固有ブロック（callout/toggle/to_do）を Notion 風の見た目で描画する EmDash native プラグイン",
   "keywords": [
     "astro",
