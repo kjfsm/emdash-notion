@@ -8,12 +8,12 @@ describe("notionBlocksPlugin() descriptor", () => {
     expect(descriptor.id).toBe("notion-blocks");
     expect(descriptor.version).toBe("0.1.0");
     expect(descriptor.format).toBe("native");
-    expect(descriptor.entrypoint).toBe("emdash-notion-blocks");
+    expect(descriptor.entrypoint).toBe("@emdash-notion/blocks");
   });
 
   it("declares componentsEntry pointing to ./astro export", () => {
     const descriptor = notionBlocksPlugin();
-    expect(descriptor.componentsEntry).toBe("emdash-notion-blocks/astro");
+    expect(descriptor.componentsEntry).toBe("@emdash-notion/blocks/astro");
   });
 
   it("declares no capabilities", () => {

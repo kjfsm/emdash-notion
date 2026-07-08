@@ -4,8 +4,8 @@
 
 A pnpm monorepo of two **native [EmDash CMS](https://emdashcms.com) plugins** that receive Notion webhooks, convert pages to [Portable Text](https://github.com/portabletext/portabletext), and sync them into EmDash content (Notion → EmDash, one-way). MVP.
 
-- **[`packages/sync`](./packages/sync)** — npm: [`emdash-notion-sync`](https://www.npmjs.com/package/emdash-notion-sync), plugin id: `notion-sync`. Fetches from Notion, converts to Portable Text, and writes to EmDash content.
-- **[`packages/blocks`](./packages/blocks)** — npm: [`emdash-notion-blocks`](https://www.npmjs.com/package/emdash-notion-blocks), plugin id: `notion-blocks`. Renders Notion-specific blocks (callout, to-do, toggle) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
+- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync), plugin id: `notion-sync`. Fetches from Notion, converts to Portable Text, and writes to EmDash content.
+- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks), plugin id: `notion-blocks`. Renders Notion-specific blocks (callout, to-do, toggle) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
 
 > The admin UI (`notion-sync`) is available in **English (default)** and **Japanese**, switchable from the settings page.
 
@@ -37,8 +37,8 @@ A pnpm monorepo of two **native [EmDash CMS](https://emdashcms.com) plugins** th
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { notionSyncPlugin } from "emdash-notion-sync";
-   import { notionBlocksPlugin } from "emdash-notion-blocks";
+   import { notionSyncPlugin } from "@emdash-notion/sync";
+   import { notionBlocksPlugin } from "@emdash-notion/blocks";
 
    export default defineConfig({
      integrations: [
@@ -82,15 +82,15 @@ pnpm lint
 pnpm build       # emits dist/ per package (native plugins build as normal npm packages)
 ```
 
-Run a script for a single package with `pnpm --filter emdash-notion-sync <script>`, or `cd packages/sync && pnpm <script>`.
+Run a script for a single package with `pnpm --filter @emdash-notion/sync <script>`, or `cd packages/sync && pnpm <script>`.
 
 Use `pnpm link` (or `pnpm link --global`) to reference a package from a local EmDash site for verification.
 
 ## Migrating from the single-package `emdash-notion`
 
-Earlier versions of this repo published a single `emdash-notion` package (plugin id `emdash-notion`). That package is deprecated in favor of `emdash-notion-sync` + `emdash-notion-blocks`. To migrate:
+Earlier versions of this repo published a single `emdash-notion` package (plugin id `emdash-notion`). That package is deprecated in favor of `@emdash-notion/sync` + `@emdash-notion/blocks`. To migrate:
 
-1. Replace the `emdash-notion` dependency with `emdash-notion-sync` (and optionally `emdash-notion-blocks`).
+1. Replace the `emdash-notion` dependency with `@emdash-notion/sync` (and optionally `@emdash-notion/blocks`).
 2. Update `astro.config.mjs` to register `notionSyncPlugin()` (and `notionBlocksPlugin()`) instead of `emdashNotionPlugin()`.
 3. Update the Notion webhook subscription URL: the path segment changes from `.../plugins/emdash-notion/webhook` to `.../plugins/notion-sync/webhook`.
 4. **Plugin storage is namespaced by plugin id**, so the existing Notion pageId ↔ EmDash contentId sync map (`ctx.storage.syncMap`) does not carry over to `notion-sync`. Because `ingest.ts` decides create-vs-update solely from that map, the first manual fetch after migrating will **re-create** every mapped page as new EmDash content rather than updating the existing entries. Delete the old EmDash entries before re-syncing, or map to a fresh collection, to avoid duplicates.

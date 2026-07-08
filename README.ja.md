@@ -4,8 +4,8 @@ English version: [README.md](./README.md).
 
 Notion の Webhook を受け取り、ページを [Portable Text](https://github.com/portabletext/portabletext) に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する、2 つの **native プラグイン**からなる pnpm monorepo（Notion → emdash 一方向。MVP）。
 
-- **[`packages/sync`](./packages/sync)** — npm: [`emdash-notion-sync`](https://www.npmjs.com/package/emdash-notion-sync)、plugin id: `notion-sync`。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
-- **[`packages/blocks`](./packages/blocks)** — npm: [`emdash-notion-blocks`](https://www.npmjs.com/package/emdash-notion-blocks)、plugin id: `notion-blocks`。Notion 固有ブロック（callout・to-do・toggle）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
+- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync)、plugin id: `notion-sync`。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
+- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks)、plugin id: `notion-blocks`。Notion 固有ブロック（callout・to-do・toggle）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
 
 > 管理 UI（`notion-sync`）は **英語（既定）** と **日本語** に対応し、設定ページから切り替えられます。
 
@@ -37,8 +37,8 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { notionSyncPlugin } from "emdash-notion-sync";
-   import { notionBlocksPlugin } from "emdash-notion-blocks";
+   import { notionSyncPlugin } from "@emdash-notion/sync";
+   import { notionBlocksPlugin } from "@emdash-notion/blocks";
 
    export default defineConfig({
      integrations: [
@@ -82,15 +82,15 @@ pnpm lint
 pnpm build       # パッケージごとに dist/ を出力（native プラグインは通常の npm パッケージとしてビルドする）
 ```
 
-特定パッケージだけ実行するには `pnpm --filter emdash-notion-sync <script>`、または `cd packages/sync && pnpm <script>` を使う。
+特定パッケージだけ実行するには `pnpm --filter @emdash-notion/sync <script>`、または `cd packages/sync && pnpm <script>` を使う。
 
 `pnpm link`（`pnpm link --global`）等でローカル emdash サイトから参照し、動作確認する。
 
 ## `emdash-notion`（単一パッケージ版）からの移行
 
-以前のバージョンは単一の `emdash-notion` パッケージ（plugin id: `emdash-notion`）として配布していた。このパッケージは非推奨とし、`emdash-notion-sync` + `emdash-notion-blocks` に置き換える。移行手順:
+以前のバージョンは単一の `emdash-notion` パッケージ（plugin id: `emdash-notion`）として配布していた。このパッケージは非推奨とし、`@emdash-notion/sync` + `@emdash-notion/blocks` に置き換える。移行手順:
 
-1. `emdash-notion` への依存を `emdash-notion-sync`（必要なら `emdash-notion-blocks` も）に置き換える。
+1. `emdash-notion` への依存を `@emdash-notion/sync`（必要なら `@emdash-notion/blocks` も）に置き換える。
 2. `astro.config.mjs` の登録を `emdashNotionPlugin()` から `notionSyncPlugin()`（・`notionBlocksPlugin()`）に変更する。
 3. Notion 側の Webhook 購読 URL を更新する: パスが `.../plugins/emdash-notion/webhook` から `.../plugins/notion-sync/webhook` に変わる。
 4. **プラグイン storage は plugin id ごとに名前空間が分かれる**ため、既存の Notion pageId ↔ emdash コンテンツ id の対応マップ（`ctx.storage.syncMap`）は `notion-sync` に引き継がれない。`ingest.ts` は create/update の判定をこのマップのみで行うため、移行後に最初の手動取得を行うと、対応済みのページが**新規コンテンツとして重複作成される**。重複を避けるには、再同期前に旧コンテンツを削除するか、別コレクションへマッピングし直すこと。

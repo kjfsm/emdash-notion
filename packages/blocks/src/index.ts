@@ -11,8 +11,8 @@ export function notionBlocksPlugin(): PluginDescriptor {
     id: "notion-blocks",
     version: "0.1.0",
     format: "native",
-    entrypoint: "emdash-notion-blocks",
-    componentsEntry: "emdash-notion-blocks/astro",
+    entrypoint: "@emdash-notion/blocks",
+    componentsEntry: "@emdash-notion/blocks/astro",
     capabilities: [],
   };
 }

@@ -1,6 +1,6 @@
 [
   {
-    "name": "emdash-notion-sync",
+    "name": "@emdash-notion/sync",
     "path": "dist/index.js",
     "limit": "30 kB",
     "ignore": ["emdash", "@emdash-cms/blocks"]

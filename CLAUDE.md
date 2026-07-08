@@ -2,8 +2,8 @@
 
 `emdash-notion` — Notion の Webhook を受け取り、ページを Portable Text に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する **pnpm monorepo**。同期処理と見た目を分離した 2 つの native プラグインからなる（Notion → emdash 一方向）。
 
-- `packages/sync`（npm: `emdash-notion-sync`, plugin id: `notion-sync`）— Notion取得・webhook受信・DB保存・Portable Text変換
-- `packages/blocks`（npm: `emdash-notion-blocks`, plugin id: `notion-blocks`）— Notion固有ブロック（callout/to_do/toggle）を Notion 風の見た目で描画する Astro コンポーネント（`componentsEntry`経由）
+- `packages/sync`（npm: `@emdash-notion/sync`, plugin id: `notion-sync`）— Notion取得・webhook受信・DB保存・Portable Text変換
+- `packages/blocks`（npm: `@emdash-notion/blocks`, plugin id: `notion-blocks`）— Notion固有ブロック（callout/to_do/toggle）を Notion 風の見た目で描画する Astro コンポーネント（`componentsEntry`経由）
 - `shared/types`（`@emdash-notion/types`, private）— 両パッケージが合意するカスタム Portable Text ブロック型
 
 概要・使い方は `README.md`（英語）/ `README.ja.md`（日本語）を参照。

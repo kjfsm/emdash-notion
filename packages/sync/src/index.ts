@@ -22,7 +22,7 @@ export function notionSyncPlugin(
     id: "notion-sync",
     version: "0.1.0",
     format: "native",
-    entrypoint: "emdash-notion-sync",
+    entrypoint: "@emdash-notion/sync",
     options,
   };
 }
