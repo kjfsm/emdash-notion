@@ -1,9 +1,9 @@
 # CLAUDE.md
 
-`emdash-notion` — Notion の Webhook を受け取り、ページを Portable Text に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する **pnpm monorepo**。同期処理と見た目を分離した 2 つの native プラグインからなる（Notion → emdash 一方向）。
+`emdash-notion` — Notion の Webhook を受け取り、ページを Portable Text に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する **pnpm monorepo**。同期処理（standard プラグイン）と見た目（native プラグイン）を分離した 2 つのプラグインからなる（Notion → emdash 一方向）。
 
-- `packages/sync`（npm: `@emdash-notion/sync`, plugin id: `notion-sync`）— Notion取得・webhook受信・DB保存・Portable Text変換
-- `packages/blocks`（npm: `@emdash-notion/blocks`, plugin id: `notion-blocks`）— Notion固有ブロック（callout/to_do/toggle）を Notion 風の見た目で描画する Astro コンポーネント（`componentsEntry`経由）
+- `packages/sync`（npm: `@emdash-notion/sync`, plugin id: `notion-sync`, **standard** format）— Notion取得・webhook受信・DB保存・Portable Text変換
+- `packages/blocks`（npm: `@emdash-notion/blocks`, plugin id: `notion-blocks`, **native** format）— Notion固有ブロック（callout/to_do/toggle）を Notion 風の見た目で描画する Astro コンポーネント（`componentsEntry`経由）
 - `shared/types`（`@emdash-notion/types`, private）— 両パッケージが合意するカスタム Portable Text ブロック型
 
 概要・使い方は `README.md`（英語）/ `README.ja.md`（日本語）を参照。
@@ -25,7 +25,7 @@
 
 ## このリポジトリ固有の絶対ルール
 
-1. **配布は npm のみ**。両プラグインとも `format: "native"` かつ API ルート／componentsEntry を宣言するため EmDash マーケットプレイス（sandboxed 向け）には公開できない。`astro.config.mjs` の `plugins: []` に導入して使う。
+1. **配布は npm のみ**。`packages/blocks`（`notion-blocks`）は `format: "native"` かつ `componentsEntry` を宣言するため EmDash マーケットプレイス（sandboxed 向け）には公開できない。`packages/sync`（`notion-sync`）は `format: "standard"` だが `notion-blocks` と組で使う構成のため、両方とも `astro.config.mjs` の `plugins: []` に導入して使う。
 2. **changeset の bump 種別**: 明示的な指示がない限り **`patch`** を使う（`minor` は後方互換の公開 API 追加、`major` は破壊的変更のみ）。`packages/**` を変更する PR には changeset を必須（`shared/**` のみの変更は対象外、`skip-changeset` ラベルでも免除）。
 3. **UI 文字列は i18n カタログ経由**（`packages/sync/src/i18n/messages.ts`）。管理画面（Block Kit）に出す文字列を直書きせず、`en`/`ja` 両ロケールにキーを追加する（`packages/sync/tests/i18n.test.ts` がキー網羅を検証）。**ログや throw する Error 等の開発者向けメッセージは英語のまま**カタログ外に置く。`packages/blocks` は管理画面文言をほぼ持たないため対象外。
 4. **プラグイン `id`** は `packages/sync` が `notion-sync`（webhook URL `/_emdash/api/plugins/notion-sync/webhook`・storage・admin.pages）、`packages/blocks` が `notion-blocks`。

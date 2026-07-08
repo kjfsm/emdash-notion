@@ -6,6 +6,7 @@ import type {
   SelectElement,
 } from "@emdash-cms/blocks/server";
 import type { PluginContext } from "emdash";
+import type { SandboxedRouteContext } from "emdash/plugin";
 
 import {
   CONFIG_KEYS,
@@ -38,9 +39,6 @@ import { fetchNotionStructure, type NotionStructure } from "./notion-options.js"
  * ブロック/要素の組み立てには `@emdash-cms/blocks/server` のビルダー（`blocks`/`elements`）を使う
  * （React 等重い依存を含まない、プラグイン向けサーバーサイド専用サブパス）。
  */
-export interface AdminRouteContext extends PluginContext {
-  input: unknown;
-}
 
 const SAVE_CONNECTION_ACTION_ID = "save_connection";
 const GENERATE_TOKEN_ACTION_ID = "generate_webhook_token";
@@ -317,8 +315,11 @@ function sanitizeMapping(raw: Record<string, unknown>): NotionMapping {
  * - `mapping-new` フォーム: 新しい対応関係を追加
  * - 手動取得ボタン: 保存済みの全対応関係を一括同期
  */
-export async function handleAdmin(ctx: AdminRouteContext): Promise<BlockResponse> {
-  const interaction = ctx.input as BlockInteraction;
+export async function handleAdmin(
+  routeCtx: SandboxedRouteContext,
+  ctx: PluginContext,
+): Promise<BlockResponse> {
+  const interaction = routeCtx.input as BlockInteraction;
   let locale = await resolveLocale(ctx);
   let m = getMessages(locale);
 
