@@ -33,11 +33,11 @@
     "release:local": "pnpm -r --if-present run release:local"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.18.3",
+    "@arethetypeswrong/cli": "^0.18.4",
     "@changesets/cli": "^2.31.0",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@typescript-eslint/parser": "^8.63.0",
-    "@vitest/coverage-v8": "^4.1.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.6.0",
     "eslint-plugin-oxlint": "^1.73.0",
     "oxfmt": "^0.58.0",
@@ -45,9 +45,9 @@
     "oxlint-tsgolint": "^0.24.0",
     "publint": "^0.3.21",
     "size-limit": "^12.1.0",
-    "tsdown": "^0.21.7",
-    "typescript": "^5.9.0",
-    "vitest": "^4.1.0"
+    "tsdown": "^0.22.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=20"
