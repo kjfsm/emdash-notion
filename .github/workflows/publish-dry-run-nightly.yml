@@ -36,5 +36,6 @@ jobs:
       - run: pnpm publint
       - run: pnpm attw
       - run: pnpm size
-      # 最後に publish --dry-run で provenance / 認証パスを検証
-      - run: pnpm publish --dry-run --no-git-checks
+      # 最後に publish --dry-run で provenance / 認証パスを検証（-r で全公開パッケージ対象、
+      # shared/* は private: true のため pnpm が自動でスキップする）
+      - run: pnpm -r publish --dry-run --no-git-checks

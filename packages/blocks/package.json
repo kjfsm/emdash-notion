@@ -1,0 +1,64 @@
+{
+  "name": "@emdash-notion/blocks",
+  "version": "0.1.0",
+  "description": "Notion 固有ブロック（callout/toggle/to_do）を Notion 風の見た目で描画する EmDash native プラグイン",
+  "keywords": [
+    "astro",
+    "cms",
+    "emdash",
+    "emdash-plugin",
+    "notion",
+    "portable-text"
+  ],
+  "homepage": "https://github.com/kjfsm/emdash-notion#readme",
+  "bugs": {
+    "url": "https://github.com/kjfsm/emdash-notion/issues"
+  },
+  "license": "MIT",
+  "author": "kjfsm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kjfsm/emdash-notion.git",
+    "directory": "packages/blocks"
+  },
+  "files": [
+    "dist",
+    "src/astro",
+    "src/*.astro"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./astro": "./src/astro/index.ts",
+    "./NotionCallout.astro": "./src/NotionCallout.astro",
+    "./NotionToggle.astro": "./src/NotionToggle.astro",
+    "./NotionTodo.astro": "./src/NotionTodo.astro"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "oxlint && eslint .",
+    "lint:fix": "oxlint --fix && eslint . --fix",
+    "release:local": "pnpm publish --no-provenance --no-git-checks"
+  },
+  "devDependencies": {
+    "@emdash-notion/types": "workspace:*",
+    "emdash": ">=0.27.0"
+  },
+  "peerDependencies": {
+    "emdash": ">=0.27.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

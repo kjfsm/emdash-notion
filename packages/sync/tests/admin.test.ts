@@ -191,7 +191,7 @@ describe("handleAdmin", () => {
     expect(res.toast?.type).toBe("success");
     const blocksJson = JSON.stringify(res.blocks);
     expect(blocksJson).toContain(
-      `https://example.com/_emdash/api/plugins/emdash-notion/webhook?token=${saved}`,
+      `https://example.com/_emdash/api/plugins/notion-sync/webhook?token=${saved}`,
     );
   });
 

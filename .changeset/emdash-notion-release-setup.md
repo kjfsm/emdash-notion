@@ -1,5 +1,5 @@
 ---
-"emdash-notion": minor
+"@emdash-notion/sync": minor
 ---
 
 リリースに向けた整備。パッケージ名を `ndash` から `emdash-notion` に変更し、npm 公開可能にした（`private` 解除、`license`/`repository`/`keywords`/`publishConfig` 等を追加、peerDependencies を `>=0.27.0` に厳格化）。

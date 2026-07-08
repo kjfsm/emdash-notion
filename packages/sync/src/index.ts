@@ -5,7 +5,7 @@ import { handleAdmin } from "./routes/admin.js";
 import { handleListFields } from "./routes/emdash-options.js";
 import { handleWebhook } from "./routes/webhook.js";
 
-export interface NdashOptions {
+export interface NotionSyncOptions {
   /** 既定書き込み先コレクション（未設定なら管理 UI の設定値を使う）。 */
   collection?: string;
 }
@@ -15,12 +15,14 @@ export interface NdashOptions {
  * ネイティブ形式のため descriptor とランタイム（`createPlugin`）は同一ファイルに同居できる
  * （sandboxed と異なり実行環境が分かれないため）。
  */
-export function emdashNotionPlugin(options: NdashOptions = {}): PluginDescriptor<NdashOptions> {
+export function notionSyncPlugin(
+  options: NotionSyncOptions = {},
+): PluginDescriptor<NotionSyncOptions> {
   return {
-    id: "emdash-notion",
+    id: "notion-sync",
     version: "0.1.0",
     format: "native",
-    entrypoint: "emdash-notion",
+    entrypoint: "@emdash-notion/sync",
     options,
   };
 }
@@ -33,9 +35,9 @@ export function emdashNotionPlugin(options: NdashOptions = {}): PluginDescriptor
  * Block Kit 設定ページ（`routes/admin.ts`）から入力し、`ctx.kv` の `settings:` 名前空間へ
  * 保存される（`src/config.ts` が同じキー名で読み出す）。
  */
-export function createPlugin(_options: NdashOptions = {}) {
+export function createPlugin(_options: NotionSyncOptions = {}) {
   return definePlugin({
-    id: "emdash-notion",
+    id: "notion-sync",
     version: "0.1.0",
 
     capabilities: ["content:read", "content:write", "media:read", "media:write", "network:request"],
@@ -50,7 +52,7 @@ export function createPlugin(_options: NdashOptions = {}) {
     // （マニフェストに載るだけで実行時に消費されない）。サイドバー/歯車アイコンは
     // admin.pages の有無で決まるため、Block Kit ページを自前で登録する（routes/admin.ts）。
     admin: {
-      pages: [{ path: "/", label: "emdash-notion", icon: "settings" }],
+      pages: [{ path: "/", label: "notion-sync", icon: "settings" }],
     },
 
     routes: {

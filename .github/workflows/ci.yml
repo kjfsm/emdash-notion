@@ -43,11 +43,12 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       # 公開パッケージの型・パッケージ整合性とバンドルサイズを release gate として検査
+      # （スクリプト未定義のパッケージは --if-present によりスキップされる）
       - run: pnpm publint
       - run: pnpm attw
       - run: pnpm size
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: "./coverage/lcov.info"
+          files: "./packages/sync/coverage/lcov.info"
           fail_ci_if_error: false

@@ -1,7 +1,15 @@
 import type { NotionBlock, NotionRichText } from "../notion/types.js";
 import { makeKeyGen } from "./keys.js";
 import { richTextToInline } from "./rich-text.js";
-import type { PortableTextBlock, PortableTextImage, PortableTextNode } from "./types.js";
+import type {
+  NotionCalloutBlock,
+  NotionCalloutIcon,
+  NotionTodoBlock,
+  NotionToggleBlock,
+  PortableTextBlock,
+  PortableTextImage,
+  PortableTextNode,
+} from "./types.js";
 
 export interface ImageRef {
   /** emdash メディア id 等の参照値。 */
@@ -33,6 +41,27 @@ const HEADING_STYLE: Record<string, string> = {
   heading_3: "h3",
 };
 
+interface NotionCalloutPayload {
+  rich_text?: NotionRichText[];
+  icon?: {
+    type: "emoji" | "external" | "file";
+    emoji?: string;
+    external?: { url: string };
+    file?: { url: string };
+  };
+  color?: string;
+}
+
+interface NotionTodoPayload {
+  rich_text?: NotionRichText[];
+  checked?: boolean;
+}
+
+interface NotionHeadingPayload {
+  rich_text?: NotionRichText[];
+  is_toggleable?: boolean;
+}
+
 /** Notion ブロックツリーを Portable Text ノード配列へ変換する。 */
 export async function notionBlocksToPortableText(
   blocks: NotionBlock[],
@@ -58,6 +87,18 @@ async function walk(
   }
 }
 
+/** `block.children` を独立した Portable Text ノード配列として変換する（toggle の入れ子コンテンツ用）。 */
+async function convertChildren(
+  blocks: NotionBlock[],
+  keygen: () => string,
+  resolveImage: ImageResolver | undefined,
+  unsupported: Set<string>,
+): Promise<PortableTextNode[]> {
+  const nested: PortableTextNode[] = [];
+  await walk(blocks, 1, nested, keygen, resolveImage, unsupported);
+  return nested;
+}
+
 async function convertBlock(
   block: NotionBlock,
   level: number,
@@ -77,25 +118,49 @@ async function convertBlock(
     case "heading_1":
     case "heading_2":
     case "heading_3": {
-      out.push(textBlock(HEADING_STYLE[type], data?.rich_text ?? [], keygen));
+      const heading = data as NotionHeadingPayload | undefined;
+      out.push(
+        textBlock(HEADING_STYLE[type], heading?.rich_text ?? [], keygen, {
+          toggle: heading?.is_toggleable || undefined,
+        }),
+      );
       // トグル見出しの子は通常ブロックとして続けて出力する。
       await walk(block.children ?? [], level, out, keygen, resolveImage, unsupported);
       return;
     }
-    case "quote":
-    case "callout": {
+    case "quote": {
       out.push(textBlock("blockquote", data?.rich_text ?? [], keygen));
       break;
     }
-    case "bulleted_list_item":
-    case "to_do": {
+    case "callout": {
+      out.push(calloutBlock(data as NotionCalloutPayload | undefined, keygen));
+      break;
+    }
+    case "bulleted_list_item": {
       out.push(listBlock("bullet", level, data?.rich_text ?? [], keygen));
+      await walk(block.children ?? [], level + 1, out, keygen, resolveImage, unsupported);
+      return;
+    }
+    case "to_do": {
+      out.push(todoBlock(data as NotionTodoPayload | undefined, level, keygen));
       await walk(block.children ?? [], level + 1, out, keygen, resolveImage, unsupported);
       return;
     }
     case "numbered_list_item": {
       out.push(listBlock("number", level, data?.rich_text ?? [], keygen));
       await walk(block.children ?? [], level + 1, out, keygen, resolveImage, unsupported);
+      return;
+    }
+    case "toggle": {
+      out.push(
+        await toggleBlock(
+          data?.rich_text ?? [],
+          block.children ?? [],
+          keygen,
+          resolveImage,
+          unsupported,
+        ),
+      );
       return;
     }
     case "code": {
@@ -136,9 +201,10 @@ function textBlock(
   style: string,
   richText: NotionRichText[],
   keygen: () => string,
+  extra: { toggle?: boolean } = {},
 ): PortableTextBlock {
   const { children, markDefs } = richTextToInline(richText, keygen);
-  return { _type: "block", _key: keygen(), style, children, markDefs };
+  return { _type: "block", _key: keygen(), style, children, markDefs, ...extra };
 }
 
 function listBlock(
@@ -149,6 +215,58 @@ function listBlock(
 ): PortableTextBlock {
   const { children, markDefs } = richTextToInline(richText, keygen);
   return { _type: "block", _key: keygen(), style: "normal", listItem, level, children, markDefs };
+}
+
+function calloutIcon(icon: NotionCalloutPayload["icon"]): NotionCalloutIcon | undefined {
+  if (!icon) return undefined;
+  if (icon.type === "emoji" && icon.emoji) return { type: "emoji", emoji: icon.emoji };
+  if (icon.type === "external" && icon.external?.url)
+    return { type: "external", url: icon.external.url };
+  if (icon.type === "file" && icon.file?.url) return { type: "file", url: icon.file.url };
+  return undefined;
+}
+
+function calloutBlock(
+  payload: NotionCalloutPayload | undefined,
+  keygen: () => string,
+): NotionCalloutBlock {
+  const { children, markDefs } = richTextToInline(payload?.rich_text ?? [], keygen);
+  return {
+    _type: "notionCallout",
+    _key: keygen(),
+    children,
+    markDefs,
+    icon: calloutIcon(payload?.icon),
+    color: payload?.color && payload.color !== "default" ? payload.color : undefined,
+  };
+}
+
+function todoBlock(
+  payload: NotionTodoPayload | undefined,
+  level: number,
+  keygen: () => string,
+): NotionTodoBlock {
+  const { children, markDefs } = richTextToInline(payload?.rich_text ?? [], keygen);
+  return {
+    _type: "notionTodo",
+    _key: keygen(),
+    children,
+    markDefs,
+    checked: payload?.checked ?? false,
+    level,
+  };
+}
+
+async function toggleBlock(
+  richText: NotionRichText[],
+  children: NotionBlock[],
+  keygen: () => string,
+  resolveImage: ImageResolver | undefined,
+  unsupported: Set<string>,
+): Promise<NotionToggleBlock> {
+  const { children: spans, markDefs } = richTextToInline(richText, keygen);
+  const content = await convertChildren(children, keygen, resolveImage, unsupported);
+  return { _type: "notionToggle", _key: keygen(), children: spans, markDefs, content };
 }
 
 async function convertImage(

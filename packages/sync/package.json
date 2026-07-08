@@ -1,0 +1,66 @@
+{
+  "name": "@emdash-notion/sync",
+  "version": "0.1.0",
+  "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks — a native EmDash plugin (Notion → EmDash)",
+  "keywords": [
+    "astro",
+    "cms",
+    "emdash",
+    "emdash-plugin",
+    "headless-cms",
+    "notion",
+    "notion-sync",
+    "portable-text"
+  ],
+  "homepage": "https://github.com/kjfsm/emdash-notion#readme",
+  "bugs": {
+    "url": "https://github.com/kjfsm/emdash-notion/issues"
+  },
+  "license": "MIT",
+  "author": "kjfsm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kjfsm/emdash-notion.git",
+    "directory": "packages/sync"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text",
+    "lint": "oxlint && eslint .",
+    "lint:fix": "oxlint --fix && eslint . --fix",
+    "publint": "publint --strict",
+    "attw": "attw --pack . --profile esm-only",
+    "size": "size-limit",
+    "release:local": "pnpm publish --no-provenance --no-git-checks"
+  },
+  "devDependencies": {
+    "@emdash-cms/blocks": ">=0.27.0",
+    "@emdash-notion/types": "workspace:*",
+    "emdash": ">=0.27.0"
+  },
+  "peerDependencies": {
+    "@emdash-cms/blocks": ">=0.27.0",
+    "emdash": ">=0.27.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

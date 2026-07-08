@@ -1,0 +1,78 @@
+---
+import { PortableText } from "emdash/ui";
+
+import { notionBlockColorVars } from "./notion-color.js";
+
+export interface Props {
+  node: {
+    _key: string;
+    children: unknown[];
+    markDefs: unknown[];
+    icon?: { type: "emoji" | "external" | "file"; emoji?: string; url?: string };
+    color?: string;
+  };
+}
+
+const { node } = Astro.props;
+const { accent, background } = notionBlockColorVars(node.color);
+const textBlock = {
+  _type: "block" as const,
+  _key: `${node._key}-text`,
+  style: "normal",
+  children: node.children,
+  markDefs: node.markDefs,
+};
+---
+
+<aside
+  class="notion-callout"
+  role="note"
+  style={`--notion-callout-accent: ${accent}; --notion-callout-bg: ${background};`}
+>
+  {
+    node.icon?.type === "emoji" && node.icon.emoji ? (
+      <span class="notion-callout__icon" aria-hidden="true">
+        {node.icon.emoji}
+      </span>
+    ) : node.icon?.url ? (
+      <img class="notion-callout__icon notion-callout__icon--image" src={node.icon.url} alt="" />
+    ) : null
+  }
+  <div class="notion-callout__content">
+    <PortableText value={[textBlock]} />
+  </div>
+</aside>
+
+<style>
+  .notion-callout {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    background: var(--notion-callout-bg, #f1f1ef);
+    margin: 1.5rem 0;
+  }
+
+  .notion-callout__icon {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    line-height: 1.4;
+  }
+
+  .notion-callout__icon--image {
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: contain;
+  }
+
+  .notion-callout__content {
+    flex: 1;
+    min-width: 0;
+    color: var(--notion-callout-accent, inherit);
+  }
+
+  .notion-callout__content :global(p) {
+    margin: 0;
+  }
+</style>

@@ -1,0 +1,59 @@
+---
+import { PortableText } from "emdash/ui";
+
+export interface Props {
+  node: {
+    _key: string;
+    children: unknown[];
+    markDefs: unknown[];
+    checked: boolean;
+    level?: number;
+  };
+}
+
+const { node } = Astro.props;
+const textBlock = {
+  _type: "block" as const,
+  _key: `${node._key}-text`,
+  style: "normal",
+  children: node.children,
+  markDefs: node.markDefs,
+};
+const indent = ((node.level ?? 1) - 1) * 1.5;
+---
+
+<div class="notion-todo" style={`--notion-todo-indent: ${indent}rem;`}>
+  <input type="checkbox" checked={node.checked} disabled aria-readonly="true" tabindex={-1} />
+  <div class:list={["notion-todo__text", { "notion-todo__text--checked": node.checked }]}>
+    <PortableText value={[textBlock]} />
+  </div>
+</div>
+
+<style>
+  .notion-todo {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin: 0.25rem 0;
+    margin-left: var(--notion-todo-indent, 0);
+  }
+
+  .notion-todo input[type="checkbox"] {
+    margin-top: 0.3rem;
+    pointer-events: none;
+  }
+
+  .notion-todo__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .notion-todo__text :global(p) {
+    margin: 0;
+  }
+
+  .notion-todo__text--checked {
+    color: var(--notion-todo-checked-color, #9b9a97);
+    text-decoration: line-through;
+  }
+</style>

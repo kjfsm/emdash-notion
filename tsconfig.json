@@ -9,7 +9,5 @@
     "skipLibCheck": true,
     "lib": ["ES2023"],
     "types": []
-  },
-  "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["node_modules", "dist"]
+  }
 }

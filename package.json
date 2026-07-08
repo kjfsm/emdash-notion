@@ -1,17 +1,7 @@
 {
   "name": "emdash-notion",
-  "version": "0.1.0",
-  "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks — a native EmDash plugin (Notion → EmDash)",
-  "keywords": [
-    "astro",
-    "cms",
-    "emdash",
-    "emdash-plugin",
-    "headless-cms",
-    "notion",
-    "notion-sync",
-    "portable-text"
-  ],
+  "private": true,
+  "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks — a monorepo of native EmDash plugins (Notion → EmDash)",
   "homepage": "https://github.com/kjfsm/emdash-notion#readme",
   "bugs": {
     "url": "https://github.com/kjfsm/emdash-notion/issues"
@@ -22,49 +12,32 @@
     "type": "git",
     "url": "git+https://github.com/kjfsm/emdash-notion.git"
   },
-  "files": [
-    "dist"
-  ],
   "type": "module",
-  "sideEffects": false,
-  "main": "dist/index.js",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text",
-    "lint": "oxlint && eslint .",
-    "lint:fix": "oxlint --fix && eslint . --fix",
+    "test:coverage": "pnpm -r --if-present test:coverage",
+    "lint": "oxlint --ignore-pattern '*.astro' . && eslint .",
+    "lint:fix": "oxlint --ignore-pattern '*.astro' --fix . && eslint . --fix",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "publint": "publint --strict",
-    "attw": "attw --pack . --profile esm-only",
-    "size": "size-limit",
+    "publint": "pnpm -r --if-present publint",
+    "attw": "pnpm -r --if-present attw",
+    "size": "pnpm -r --if-present size",
     "changeset": "changeset",
     "version": "changeset version",
     "version:snapshot": "changeset version --snapshot canary",
-    "release": "changeset publish",
+    "release": "pnpm -r build && changeset publish",
     "release:snapshot": "changeset publish --tag canary --no-git-tag",
-    "release:local": "pnpm publish --no-provenance --no-git-checks"
+    "release:local": "pnpm -r publish --no-provenance --no-git-checks"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",
     "@changesets/cli": "^2.31.0",
-    "@emdash-cms/blocks": ">=0.27.0",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@typescript-eslint/parser": "^8.62.1",
     "@vitest/coverage-v8": "^4.1.0",
-    "emdash": ">=0.27.0",
     "eslint": "^10.6.0",
     "eslint-plugin-oxlint": "^1.72.0",
     "oxfmt": "^0.57.0",
@@ -74,10 +47,6 @@
     "size-limit": "^12.1.0",
     "typescript": "^5.9.0",
     "vitest": "^4.1.0"
-  },
-  "peerDependencies": {
-    "@emdash-cms/blocks": ">=0.27.0",
-    "emdash": ">=0.27.0"
   },
   "engines": {
     "node": ">=20"
