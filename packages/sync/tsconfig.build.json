@@ -9,6 +9,7 @@
     "lib": ["ES2023"],
     "declaration": true,
     "outDir": "dist",
+    "rootDir": "src",
     "types": []
   },
   "include": ["src/**/*"],
