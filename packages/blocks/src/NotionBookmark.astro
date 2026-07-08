@@ -1,6 +1,8 @@
 ---
 import { PortableText } from "emdash/ui";
 
+import { safeHref, safeImageSrc } from "@emdash-notion/blocks/safe-url";
+
 export interface Props {
   node: {
     _key: string;
@@ -27,9 +29,14 @@ const captionBlock = node.caption
       markDefs: node.markDefs ?? [],
     }
   : null;
+
+// Notion 由来 URL は javascript: 等の危険スキームを弾く。安全でなければリンクにしない。
+const href = safeHref(node.url);
+const ogImage = safeImageSrc(node.og?.image);
+const Tag = href ? "a" : "div";
 ---
 
-<a class="notion-bookmark" href={node.url} target="_blank" rel="noopener noreferrer">
+<Tag class="notion-bookmark" href={href} target={href ? "_blank" : undefined} rel={href ? "noopener noreferrer" : undefined}>
   {
     node.og ? (
       <>
@@ -38,13 +45,13 @@ const captionBlock = node.caption
           {node.og.description && <p class="notion-bookmark__desc">{node.og.description}</p>}
           <p class="notion-bookmark__url">{node.og.siteName ?? node.url}</p>
         </div>
-        {node.og.image && <img class="notion-bookmark__image" src={node.og.image} alt="" />}
+        {ogImage && <img class="notion-bookmark__image" src={ogImage} alt="" />}
       </>
     ) : (
       <span class="notion-bookmark__fallback">{node.url}</span>
     )
   }
-</a>
+</Tag>
 {captionBlock && (
   <p class="notion-bookmark__caption">
     <PortableText value={[captionBlock]} />

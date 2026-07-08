@@ -26,8 +26,8 @@
     "attw": "pnpm -r --if-present attw",
     "size": "pnpm -r --if-present size",
     "changeset": "changeset",
-    "version": "changeset version",
-    "version:snapshot": "changeset version --snapshot canary",
+    "version": "changeset version && pnpm -r --if-present gen-version",
+    "version:snapshot": "changeset version --snapshot canary && pnpm -r --if-present gen-version",
     "release": "pnpm -r build && changeset publish",
     "release:snapshot": "changeset publish --tag canary --no-git-tag",
     "release:local": "pnpm -r --if-present run release:local"

@@ -1,5 +1,7 @@
 import type { PluginDescriptor } from "emdash";
 
+import { VERSION } from "./version.js";
+
 /**
  * プラグイン記述子。`astro.config.mjs` の `plugins: []`（in-process、trusted）で読み込む。
  * standard format のため、識別情報（id/version/capabilities/allowedHosts/storage/adminPages）は
@@ -10,7 +12,7 @@ import type { PluginDescriptor } from "emdash";
 export function notionSyncPlugin(): PluginDescriptor {
   return {
     id: "notion-sync",
-    version: "0.1.0",
+    version: VERSION,
     format: "standard",
     entrypoint: "@emdash-notion/sync/sandbox",
 

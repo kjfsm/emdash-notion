@@ -7,6 +7,8 @@ export interface SyncCounts {
   unchanged: number;
   skipped: number;
   failed: number;
+  /** 予算超過で本文末尾が欠落したまま保存されたページ数。 */
+  truncated: number;
 }
 
 /**
@@ -69,6 +71,10 @@ export interface Messages {
   syncDoneTitle: string;
   syncSummary: (counts: SyncCounts) => string;
   syncFailuresSuffix: (errors: string[]) => string;
+  /** 予算超過で本文が欠落したページがあるときの注意書き。 */
+  syncTruncatedSuffix: (truncated: number) => string;
+
+  networkUnavailable: string;
 
   tokenSaved: string;
   mappingAdded: string;
@@ -146,6 +152,10 @@ const en: Messages = {
     `${c.total} target(s) — created ${c.created} / updated ${c.updated} / ` +
     `unchanged ${c.unchanged} / skipped ${c.skipped} / failed ${c.failed}`,
   syncFailuresSuffix: (errors) => ` (failed: ${errors.join(" / ")})`,
+  syncTruncatedSuffix: (truncated) =>
+    ` (⚠ ${truncated} page(s) exceeded the request budget and were saved with the tail of the body missing; they will be repaired on the next full sync)`,
+
+  networkUnavailable: "Network capability is unavailable (network:request not granted)",
 
   tokenSaved: "Tokens saved",
   mappingAdded: "Mapping added",
@@ -225,6 +235,10 @@ const ja: Messages = {
     `対象 ${c.total} 件中 — 新規作成 ${c.created} / 更新 ${c.updated} / ` +
     `変更なし ${c.unchanged} / スキップ ${c.skipped} / 失敗 ${c.failed}`,
   syncFailuresSuffix: (errors) => `（失敗: ${errors.join(" / ")}）`,
+  syncTruncatedSuffix: (truncated) =>
+    `（⚠ ${truncated} 件がリクエスト予算を超過し、本文末尾が欠落したまま保存されました。次回の全量同期で修復されます）`,
+
+  networkUnavailable: "ネットワーク機能が利用できません（network:request が未付与）",
 
   tokenSaved: "トークンを保存しました",
   mappingAdded: "対応を追加しました",

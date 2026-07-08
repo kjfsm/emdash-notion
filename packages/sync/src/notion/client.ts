@@ -10,6 +10,8 @@ const NOTION_VERSION = "2022-06-28";
 
 const MAX_RETRIES = 3;
 const RETRY_BASE_MS = 400;
+/** Retry-After の上限（ms）。巨大値でリクエスト実行時間（sandbox の wall-time）を食い潰さないためのクランプ。 */
+const MAX_RETRY_AFTER_MS = 30_000;
 
 export class NotionApiError extends Error {
   constructor(
@@ -106,7 +108,7 @@ export class NotionClient {
         const retryAfter = Number(res.headers.get("Retry-After"));
         const waitMs =
           Number.isFinite(retryAfter) && retryAfter > 0
-            ? retryAfter * 1000
+            ? Math.min(retryAfter * 1000, MAX_RETRY_AFTER_MS)
             : RETRY_BASE_MS * 2 ** attempt;
         await sleep(waitMs);
         continue;

@@ -38,6 +38,10 @@
       "types": "./dist/notion-color.d.mts",
       "import": "./dist/notion-color.mjs"
     },
+    "./safe-url": {
+      "types": "./dist/safe-url.d.mts",
+      "import": "./dist/safe-url.mjs"
+    },
     "./astro": "./src/astro/index.ts",
     "./NotionBookmark.astro": "./src/NotionBookmark.astro",
     "./NotionCallout.astro": "./src/NotionCallout.astro",
@@ -51,7 +55,9 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsdown src/index.ts src/notion-color.ts --dts.eager",
+    "gen-version": "node ../../scripts/gen-version.mjs",
+    "prebuild": "pnpm gen-version",
+    "build": "tsdown src/index.ts src/notion-color.ts src/safe-url.ts --dts.eager",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "oxlint && eslint .",
@@ -59,7 +65,7 @@
     "release:local": "npm publish --no-provenance"
   },
   "devDependencies": {
-    "@emdash-notion/types": "workspace:*",
+    "@emdash-notion/sync": "workspace:*",
     "emdash": ">=0.28.1"
   },
   "peerDependencies": {

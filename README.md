@@ -5,7 +5,7 @@
 A pnpm monorepo that receives Notion webhooks, converts pages to [Portable Text](https://github.com/portabletext/portabletext), and syncs them into [EmDash CMS](https://emdashcms.com) content (Notion → EmDash, one-way). MVP. Two plugins split sync logic from rendering.
 
 - **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync), plugin id: `notion-sync` (**standard** format). Fetches from Notion, converts to Portable Text, and writes to EmDash content.
-- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks), plugin id: `notion-blocks` (**native** format). Renders Notion-specific blocks (callout, to-do, toggle) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
+- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks), plugin id: `notion-blocks` (**native** format). Renders Notion-specific blocks (callout, to-do, toggle, equation, bookmark, divider) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
 
 > The admin UI (`notion-sync`) is available in **English (default)** and **Japanese**, switchable from the settings page.
 
@@ -66,13 +66,39 @@ A pnpm monorepo that receives Notion webhooks, converts pages to [Portable Text]
 
    The subscription handshake (`verification_token`) is echoed back automatically.
 
+## Notion blocks & styling (`notion-blocks`)
+
+`notion-blocks` ships Astro components for these custom Portable Text block types (produced by `notion-sync`):
+
+| `_type`          | Notion source           | Notes                                                                                      |
+| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
+| `notionCallout`  | callout                 | Keeps icon (emoji/image) and color.                                                        |
+| `notionTodo`     | to-do                   | Keeps checked state and nesting level.                                                     |
+| `notionToggle`   | toggle                  | Collapsible; nested children kept as Portable Text.                                        |
+| `notionEquation` | block equation          | Renders the **raw LaTeX string** as text — no KaTeX/MathJax is bundled.                    |
+| `notionBookmark` | bookmark / link preview | Card with OGP metadata **only if** `notion-sync` fetched it (see below); else a bare link. |
+| `divider`        | divider                 | Simple `<hr>`.                                                                             |
+
+Other Notion blocks (tables, columns, video/audio/file/pdf, embeds, images) are converted to EmDash's **core** Portable Text block types and rendered by EmDash's default components — `notion-blocks` is not involved.
+
+**Bookmark OGP** is fetched by `notion-sync` at sync time (its `fetchOgp` helper). If the fetch fails or the host is unreachable, the block is stored without `og` metadata and `notion-blocks` renders a plain link. URLs from Notion are scheme-checked before rendering, so `javascript:`-style hrefs/`src`s are dropped.
+
+**Overriding styles** — components read CSS custom properties, so you can theme them from your site's global CSS without ejecting:
+
+| Property                      | Component | Purpose               |
+| ----------------------------- | --------- | --------------------- |
+| `--notion-callout-accent`     | callout   | Text/foreground color |
+| `--notion-callout-bg`         | callout   | Background color      |
+| `--notion-todo-checked-color` | to-do     | Checked mark color    |
+| `--notion-todo-indent`        | to-do     | Nested indent width   |
+
 ## Distribution
 
 `notion-blocks` is a **native** EmDash plugin (it declares a `componentsEntry`), so it isn't eligible for the EmDash Marketplace, which is for sandboxed plugins. `notion-sync` is **standard**, but since it's meant to be paired with `notion-blocks`, both are distributed on **npm** and installed in `astro.config.mjs`.
 
 ## Development
 
-This is a pnpm workspace monorepo (`packages/*`, `shared/*`).
+This is a pnpm workspace monorepo (`packages/*`).
 
 ```sh
 pnpm install

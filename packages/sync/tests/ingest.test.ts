@@ -182,6 +182,116 @@ describe("ingestPage", () => {
     expect(t.created[0]!.data.title).toBe("My Page");
   });
 
+  it('SQLite の "no such column: X" 文言でも欠損フィールドを外して再試行する', async () => {
+    const fetch = makeNotionHttp({
+      pages: {
+        page1: {
+          ...notionPage("page1", "2026-02-01T00:00:00.000Z"),
+          properties: {
+            Name: notionPage("page1", "x").properties.Name,
+            slug: {
+              id: "s",
+              type: "rich_text",
+              rich_text: [
+                {
+                  type: "text",
+                  plain_text: "my-slug",
+                  href: null,
+                  annotations: {
+                    bold: false,
+                    italic: false,
+                    strikethrough: false,
+                    underline: false,
+                    code: false,
+                    color: "default",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      children: { page1: { results: [] } },
+    });
+    let attempts = 0;
+    const t = createTestContext({
+      kv: {
+        "settings:notionToken": "secret_token",
+        "settings:mappings": [
+          { collection: "posts", databaseId: "db1", slugProperty: "slug", slugField: "slug" },
+        ],
+      },
+      fetch,
+      onCreate: (_collection, data) => {
+        attempts++;
+        if (attempts === 1 && "slug" in data) {
+          throw new Error("SqliteError: no such column: slug");
+        }
+        return { id: "content_1" };
+      },
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("created");
+    expect(attempts).toBe(2);
+    expect(t.created[0]!.data.slug).toBeUndefined();
+  });
+
+  it('テーブル修飾されたカラム名（"no such column: t.slug"）でも欠損フィールドを特定して外せる', async () => {
+    function notionPageWithSlug() {
+      const p = notionPage("page1", "2026-02-01T00:00:00.000Z");
+      p.properties = {
+        ...p.properties,
+        slug: {
+          id: "s",
+          type: "rich_text",
+          rich_text: [
+            {
+              type: "text",
+              plain_text: "my-slug",
+              href: null,
+              annotations: {
+                bold: false,
+                italic: false,
+                strikethrough: false,
+                underline: false,
+                code: false,
+                color: "default",
+              },
+            },
+          ],
+        },
+      } as typeof p.properties;
+      return p;
+    }
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPageWithSlug() },
+      children: { page1: { results: [] } },
+    });
+    let attempts = 0;
+    const t = createTestContext({
+      kv: {
+        "settings:notionToken": "secret_token",
+        "settings:mappings": [
+          { collection: "posts", databaseId: "db1", slugProperty: "slug", slugField: "slug" },
+        ],
+      },
+      fetch,
+      onCreate: (_collection, data) => {
+        attempts++;
+        if (attempts === 1 && "slug" in data) {
+          throw new Error("SqliteError: no such column: t.slug");
+        }
+        return { id: "content_1" };
+      },
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("created");
+    expect(attempts).toBe(2);
+    expect(t.created[0]!.data.slug).toBeUndefined();
+  });
+
   it("マッピングされていない DB のページは skipped", async () => {
     const fetch = makeNotionHttp({
       pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
@@ -196,5 +306,124 @@ describe("ingestPage", () => {
     });
     const res = await ingestPage(t.ctx, "page1");
     expect(res.status).toBe("skipped");
+  });
+
+  it("予約直後の読み直しで別リクエストの予約に置き換わっていたら、作成せず中断する（真の同時書き込みを想定）", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
+      children: { page1: { results: [paragraph("b1", "hi")] } },
+    });
+    const t = createTestContext({ kv, fetch });
+
+    // getMapping の 2 回目の呼び出し（＝自分の予約書き込み直後の読み直し）で、
+    // 別リクエストが先に予約を上書きした状況を注入する。content.create() より前なので、
+    // 旧方式（create 後に照合）と違い、無駄な重複コンテンツは一切作られないはず。
+    const originalGet = t.ctx.storage.syncMap.get.bind(t.ctx.storage.syncMap);
+    let getCalls = 0;
+    t.ctx.storage.syncMap.get = (async (id: string) => {
+      getCalls++;
+      if (getCalls === 2) {
+        await t.ctx.storage.syncMap.put(id, {
+          emdashId: "",
+          updatedAt: "2026-02-01T00:00:00.000Z",
+          hash: "other",
+          notionLastEdited: "2026-02-01T00:00:00.000Z",
+          pending: true,
+          claimId: "other-actor-claim",
+        });
+      }
+      return originalGet(id);
+    }) as typeof t.ctx.storage.syncMap.get;
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("skipped");
+    // content.create は一度も呼ばれていない（旧方式は create→削除だったが、新方式は create 前に中断する）。
+    expect(t.created).toHaveLength(0);
+  });
+
+  it("既存の pending レコード（他リクエストが取り込み中）があれば、即座に中断する", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
+      children: { page1: { results: [] } },
+    });
+    const t = createTestContext({ kv, fetch });
+    t.syncStore.set("page1", {
+      emdashId: "",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "whatever",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      pending: true,
+      claimId: "someone-else",
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("skipped");
+    expect(t.created).toHaveLength(0);
+  });
+
+  it("新規作成が失敗したら予約を解除し、次回の呼び出しでやり直せる", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
+      children: { page1: { results: [paragraph("b1", "hi")] } },
+    });
+    let attempts = 0;
+    const t = createTestContext({
+      kv,
+      fetch,
+      onCreate: () => {
+        attempts++;
+        if (attempts === 1) throw new Error("boom: unrelated failure");
+        return { id: "content_ok" };
+      },
+    });
+
+    await expect(ingestPage(t.ctx, "page1")).rejects.toThrow("boom");
+    // 予約だけが残って永久に取り込めなくなることを防ぐため、失敗時はレコードごと消える。
+    expect(t.syncStore.has("page1")).toBe(false);
+
+    const retry = await ingestPage(t.ctx, "page1");
+    expect(retry.status).toBe("created");
+    expect(t.created).toHaveLength(1);
+  });
+
+  it("unchanged 判定でも保存済みの truncated 状態を返す", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
+      children: { page1: { results: [], has_more: true, next_cursor: "c" } },
+    });
+    const t = createTestContext({ kv, fetch });
+    const first = await ingestPage(t.ctx, "page1");
+    expect(first.truncated).toBe(true);
+
+    const second = await ingestPage(t.ctx, "page1");
+    expect(second.status).toBe("unchanged");
+    // truncated はハッシュに含まれ状態が変わっていないため unchanged になるが、
+    // 「まだ本文が欠けている」ことは呼び出し元（bulk 集計・管理画面）に伝わり続ける必要がある。
+    expect(second.truncated).toBe(true);
+  });
+
+  it("予算超過でブロックツリーが打ち切られたら truncated=true を返し、ハッシュに反映する", async () => {
+    // children が常に has_more を返すためリクエスト予算（既定 40）を使い切って打ち切られる。
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
+      children: { page1: { results: [], has_more: true, next_cursor: "c" } },
+    });
+    const t = createTestContext({ kv, fetch });
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("created");
+    expect(res.truncated).toBe(true);
+    // truncated 状態がハッシュに含まれるので、あとで全量取得できれば必ず更新が走る。
+    const stored = t.syncStore.get("page1") as { hash: string };
+    const full = createTestContext({
+      kv,
+      fetch: makeNotionHttp({
+        pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
+        children: { page1: { results: [paragraph("b1", "full body")] } },
+      }),
+    });
+    full.syncStore.set("page1", stored);
+    const second = await ingestPage(full.ctx, "page1");
+    expect(second.status).toBe("updated");
+    expect(second.truncated).toBe(false);
   });
 });

@@ -5,7 +5,7 @@ English version: [README.md](./README.md).
 Notion の Webhook を受け取り、ページを [Portable Text](https://github.com/portabletext/portabletext) に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する pnpm monorepo（Notion → emdash 一方向。MVP）。同期処理（standard プラグイン）と見た目（native プラグイン）を分離した 2 つのプラグインからなる。
 
 - **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync)、plugin id: `notion-sync`（**standard** format）。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
-- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks)、plugin id: `notion-blocks`（**native** format）。Notion 固有ブロック（callout・to-do・toggle）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
+- **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks)、plugin id: `notion-blocks`（**native** format）。Notion 固有ブロック（callout・to-do・toggle・equation・bookmark・divider）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
 
 > 管理 UI（`notion-sync`）は **英語（既定）** と **日本語** に対応し、設定ページから切り替えられます。
 
@@ -66,13 +66,39 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
    購読作成時のハンドシェイク（`verification_token`）は自動でエコー返しされる。
 
+## Notion ブロックと見た目のカスタマイズ（`notion-blocks`）
+
+`notion-blocks` は次のカスタム Portable Text ブロック型（`notion-sync` が生成）用の Astro コンポーネントを配布する:
+
+| `_type`          | Notion の元ブロック     | 補足                                                                              |
+| ---------------- | ----------------------- | --------------------------------------------------------------------------------- |
+| `notionCallout`  | callout                 | アイコン（絵文字/画像）と色を保持。                                               |
+| `notionTodo`     | to-do                   | チェック状態とネスト深さを保持。                                                  |
+| `notionToggle`   | toggle                  | 開閉式。子は入れ子の Portable Text として保持。                                   |
+| `notionEquation` | ブロック数式            | **生の LaTeX 文字列**をそのままテキスト表示（KaTeX/MathJax は同梱しない）。       |
+| `notionBookmark` | bookmark / link preview | `notion-sync` が OGP を取得できた場合のみカード表示（下記）。失敗時は素のリンク。 |
+| `divider`        | 区切り線                | 単純な `<hr>`。                                                                   |
+
+その他の Notion ブロック（テーブル・カラム・video/audio/file/pdf・embed・画像）は emdash **コア標準**の Portable Text ブロック型へ変換され、emdash 標準コンポーネントが描画する（`notion-blocks` は関与しない）。
+
+**bookmark の OGP** は `notion-sync` が同期時（`fetchOgp`）に取得する。取得失敗やホスト到達不可のときは `og` なしで保存され、`notion-blocks` は素のリンクを描画する。Notion 由来の URL は描画前にスキーム検証され、`javascript:` 等の危険な href/src は破棄される。
+
+**スタイルの上書き** — 各コンポーネントは CSS カスタムプロパティを読むため、サイトのグローバル CSS から eject せずにテーマ調整できる:
+
+| プロパティ                    | コンポーネント | 用途                   |
+| ----------------------------- | -------------- | ---------------------- |
+| `--notion-callout-accent`     | callout        | 文字/前景色            |
+| `--notion-callout-bg`         | callout        | 背景色                 |
+| `--notion-todo-checked-color` | to-do          | チェックマークの色     |
+| `--notion-todo-indent`        | to-do          | ネスト時のインデント幅 |
+
 ## 配布
 
 `notion-blocks` は `componentsEntry` を宣言する **native** プラグインのため、マーケットプレイス（sandboxed 向け）には公開できない。`notion-sync` は **standard** プラグインだが、`notion-blocks` と組で使う構成のため、両方とも **npm** で配布し `astro.config.mjs` に導入する。
 
 ## 開発
 
-pnpm workspace の monorepo（`packages/*`, `shared/*`）。
+pnpm workspace の monorepo（`packages/*`）。
 
 ```sh
 pnpm install

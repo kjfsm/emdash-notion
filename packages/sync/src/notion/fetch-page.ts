@@ -4,6 +4,8 @@ import type { NotionBlock, NotionPage } from "./types.js";
 export interface FetchedPage {
   page: NotionPage;
   blocks: NotionBlock[];
+  /** リクエスト予算超過でブロックツリーを打ち切ったとき true（本文が末尾で欠落している）。 */
+  truncated: boolean;
 }
 
 /**
@@ -31,7 +33,7 @@ export async function fetchPage(
   const blocks = await fetchBlockTree(client, pageId, budget);
   if (budget.truncated)
     options.onTruncate?.((options.maxRequests ?? DEFAULT_MAX_REQUESTS) - budget.remaining);
-  return { page, blocks };
+  return { page, blocks, truncated: budget.truncated };
 }
 
 interface Budget {

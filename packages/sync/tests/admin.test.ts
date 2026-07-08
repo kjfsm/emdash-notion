@@ -240,4 +240,86 @@ describe("handleAdmin", () => {
     expect(blocksJson).toContain("Broken DB (db1)");
     expect(blocksJson).toContain('"variant":"alert"');
   });
+
+  it("manual_sync: truncated のみ（失敗0件）なら banner は alert に留め、error にはしない", async () => {
+    const t = createTestContext({
+      kv: {
+        "settings:notionToken": "tok",
+        "settings:mappings": [{ collection: "posts", databaseId: "db1" }],
+      },
+      fetch: async (url) => {
+        const u = new URL(url);
+        if (u.pathname === "/v1/databases/db1/query") {
+          return new Response(
+            JSON.stringify({
+              object: "list",
+              results: [{ object: "page", id: "p1" }],
+              next_cursor: null,
+              has_more: false,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (u.pathname === "/v1/pages/p1") {
+          return new Response(
+            JSON.stringify({
+              object: "page",
+              id: "p1",
+              created_time: "2026-01-01T00:00:00.000Z",
+              last_edited_time: "2026-02-01T00:00:00.000Z",
+              archived: false,
+              parent: { type: "data_source_id", data_source_id: "db1" },
+              properties: { Name: { id: "t", type: "title", title: [] } },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (u.pathname === "/v1/blocks/p1/children") {
+          // has_more を返し続け、予算超過で truncated になるようにする。
+          return new Response(
+            JSON.stringify({
+              object: "list",
+              results: [],
+              next_cursor: "c",
+              has_more: true,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        return new Response(JSON.stringify({ error: "unhandled" }), { status: 500 });
+      },
+    });
+
+    const routeCtx = withRoute(
+      t.ctx,
+      { type: "block_action", action_id: "manual_sync" },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(...routeCtx);
+
+    expect(res.toast?.type).toBe("success");
+    const blocksJson = JSON.stringify(res.blocks);
+    expect(blocksJson).toContain('"variant":"alert"');
+    expect(blocksJson).not.toContain('"variant":"error"');
+  });
+
+  it("manual_sync: 実際の失敗があれば banner は error になる", async () => {
+    const t = createTestContext({
+      kv: {
+        "settings:notionToken": "tok",
+        "settings:mappings": [{ collection: "posts", databaseId: "db1" }],
+      },
+      fetch: async () => new Response(JSON.stringify({ message: "forbidden" }), { status: 403 }),
+    });
+
+    const routeCtx = withRoute(
+      t.ctx,
+      { type: "block_action", action_id: "manual_sync" },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(...routeCtx);
+
+    const blocksJson = JSON.stringify(res.blocks);
+    expect(blocksJson).toContain('"variant":"error"');
+  });
 });

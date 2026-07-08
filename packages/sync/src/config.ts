@@ -91,10 +91,22 @@ export async function loadConfig(ctx: PluginContext): Promise<NdashConfig> {
       ctx.kv.get<OptionItem[]>(CONFIG_KEYS.notionProperties),
     ]);
 
+  const mappings = Array.isArray(rawMappings) ? rawMappings.map(normalizeMapping) : [];
+
+  // WHY: webhook 経由の取り込み（ingestPage）・手動一括同期（syncAll）のどちらも loadConfig を
+  // 経由するため、ここで一度だけ検証すれば両経路に自動で効く（一方だけ検証すると経路によって
+  // 警告が出たり出なかったりする不整合が起きる）。
+  const duplicateDbIds = findDuplicateDatabaseIds(mappings);
+  if (duplicateDbIds.length > 0) {
+    ctx.log.warn("notion sync: duplicate databaseId across mappings (only the first wins)", {
+      databaseIds: duplicateDbIds,
+    });
+  }
+
   return {
     notionToken: notionToken ?? "",
     webhookToken: webhookToken ?? "",
-    mappings: Array.isArray(rawMappings) ? rawMappings.map(normalizeMapping) : [],
+    mappings,
     notionDatabases: Array.isArray(notionDatabases) ? notionDatabases : [],
     notionProperties: Array.isArray(notionProperties) ? notionProperties : [],
   };
@@ -110,6 +122,23 @@ export function isConfigReady(config: NdashConfig): boolean {
 
 function stripDashes(id: string): string {
   return id.replace(/-/g, "").toLowerCase();
+}
+
+/**
+ * 同じ Notion データベースを複数コレクションへ割り当てているマッピングを検出する。
+ * `findMappingForParent` は先勝ちのため、重複があると 2 つ目以降が無警告で無視される。
+ * 正規化済み（ダッシュ除去・小文字化）の databaseId を返す。
+ */
+export function findDuplicateDatabaseIds(mappings: NotionMapping[]): string[] {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const m of mappings) {
+    if (!m.databaseId) continue;
+    const key = stripDashes(m.databaseId);
+    if (seen.has(key)) duplicates.add(key);
+    else seen.add(key);
+  }
+  return [...duplicates];
 }
 
 /** ページの parent（database_id / data_source_id）に一致するマッピングを探す。 */

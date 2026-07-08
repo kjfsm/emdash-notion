@@ -231,12 +231,17 @@ function syncResultBanner(result: BulkSyncResult, m: Messages): Block {
       variant: "error",
     });
   }
-  const summary = m.syncSummary(result);
+  let summary = m.syncSummary(result);
+  if (result.failed > 0) summary += m.syncFailuresSuffix(result.errors.slice(0, 3));
+  if (result.truncated > 0) summary += m.syncTruncatedSuffix(result.truncated);
+  // WHY: truncated は「次回の全量同期で自己修復される」良性の状態で、実際の失敗（failed）とは
+  // 深刻度が異なる。同じ "alert" にまとめると運用者が本物の失敗と誤認しかねないため、
+  // failed が無ければ truncated があっても "alert"（要注意）に留め、"error"（要対応）にはしない。
+  const variant = result.failed > 0 ? "error" : result.truncated > 0 ? "alert" : "default";
   return blocks.banner({
     title: m.syncDoneTitle,
-    description:
-      result.failed > 0 ? summary + m.syncFailuresSuffix(result.errors.slice(0, 3)) : summary,
-    variant: result.failed > 0 ? "alert" : "default",
+    description: summary,
+    variant,
   });
 }
 
