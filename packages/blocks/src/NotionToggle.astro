@@ -1,0 +1,51 @@
+---
+import { PortableText } from "emdash/ui";
+
+export interface Props {
+  node: {
+    _key: string;
+    children: unknown[];
+    markDefs: unknown[];
+    content: unknown[];
+  };
+}
+
+const { node } = Astro.props;
+const titleBlock = {
+  _type: "block" as const,
+  _key: `${node._key}-title`,
+  style: "normal",
+  children: node.children,
+  markDefs: node.markDefs,
+};
+---
+
+<details class="notion-toggle">
+  <summary class="notion-toggle__summary">
+    <PortableText value={[titleBlock]} />
+  </summary>
+  <div class="notion-toggle__content">
+    <PortableText value={node.content} />
+  </div>
+</details>
+
+<style>
+  .notion-toggle {
+    margin: 0.5rem 0;
+  }
+
+  .notion-toggle__summary {
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .notion-toggle__summary :global(p) {
+    display: inline;
+    margin: 0;
+  }
+
+  .notion-toggle__content {
+    padding-left: 1.5rem;
+    margin-top: 0.25rem;
+  }
+</style>
