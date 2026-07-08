@@ -31,6 +31,8 @@ export function createPlugin() {
         { type: "notionCallout", label: "Notion Callout", icon: "info" },
         { type: "notionTodo", label: "Notion To-do", icon: "check-square" },
         { type: "notionToggle", label: "Notion Toggle", icon: "chevron-down" },
+        { type: "notionEquation", label: "Notion Equation", icon: "sigma" },
+        { type: "notionBookmark", label: "Notion Bookmark", icon: "link" },
       ],
     },
   });
