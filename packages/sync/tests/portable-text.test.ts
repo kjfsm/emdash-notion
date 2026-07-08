@@ -166,6 +166,18 @@ describe("notionBlocksToPortableText", () => {
     expect(heading.toggle).toBe(true);
   });
 
+  it("heading_4/5/6 を h4/h5/h6 に変換し unsupported に記録しない", async () => {
+    const { blocks, unsupported } = await notionBlocksToPortableText([
+      block("h4", "heading_4", { rich_text: [rt("H4")] }),
+      block("h5", "heading_5", { rich_text: [rt("H5")] }),
+      block("h6", "heading_6", { rich_text: [rt("H6")] }),
+    ]);
+    expect((blocks[0] as PortableTextBlock).style).toBe("h4");
+    expect((blocks[1] as PortableTextBlock).style).toBe("h5");
+    expect((blocks[2] as PortableTextBlock).style).toBe("h6");
+    expect(unsupported).toEqual([]);
+  });
+
   it("画像を resolver 経由でメディア参照に変換する", async () => {
     const { blocks } = await notionBlocksToPortableText(
       [
@@ -182,6 +194,29 @@ describe("notionBlocksToPortableText", () => {
     expect(img.asset._ref).toBe("media_9");
     expect(img.asset.url).toBe("https://cdn/x.png");
     expect(img.alt).toBe("cap");
+  });
+
+  it("外部ホストの画像は resolver を呼ばず元 URL をそのまま参照する", async () => {
+    let called = false;
+    const { blocks } = await notionBlocksToPortableText(
+      [
+        block("i", "image", {
+          type: "external",
+          external: { url: "https://images.unsplash.com/photo-1.jpg" },
+          caption: [rt("cap")],
+        }),
+      ],
+      {
+        resolveImage: async () => {
+          called = true;
+          return { ref: "media_9", url: "https://cdn/x.png" };
+        },
+      },
+    );
+    const img = blocks[0] as PortableTextImage;
+    expect(called).toBe(false);
+    expect(img.asset._ref).toBe("https://images.unsplash.com/photo-1.jpg");
+    expect(img.asset.url).toBe("https://images.unsplash.com/photo-1.jpg");
   });
 
   it("未対応ブロックは unsupported に記録する", async () => {

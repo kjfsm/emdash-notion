@@ -68,6 +68,9 @@ const HEADING_STYLE: Record<string, string> = {
   heading_1: "h1",
   heading_2: "h2",
   heading_3: "h3",
+  heading_4: "h4",
+  heading_5: "h5",
+  heading_6: "h6",
 };
 
 interface NotionCalloutPayload {
@@ -158,7 +161,10 @@ async function convertBlock(
     }
     case "heading_1":
     case "heading_2":
-    case "heading_3": {
+    case "heading_3":
+    case "heading_4":
+    case "heading_5":
+    case "heading_6": {
       const heading = data as NotionHeadingPayload | undefined;
       out.push(
         textBlock(HEADING_STYLE[type], heading?.rich_text ?? [], keygen, {
@@ -350,6 +356,11 @@ async function toggleBlock(
   return { _type: "notionToggle", _key: keygen(), children: spans, markDefs, content };
 }
 
+/**
+ * Notion の image を emdash コア標準の image 形状へ変換する。file 型（Notion の署名付き URL、
+ * 約1時間で失効）のときだけ resolveImage で emdash メディアへ永続化し、external（外部ホストの
+ * 恒久 URL）はそのまま参照する（allowedHosts 外のホストへの無駄な fetch を避けるため）。
+ */
 async function convertImage(
   block: NotionBlock,
   keygen: () => string,
@@ -367,7 +378,8 @@ async function convertImage(
   if (!url) return null;
   const alt = (image?.caption ?? []).map((rt) => rt.plain_text).join("");
 
-  const resolved = resolveImage
+  const shouldPersist = image?.type === "file" && resolveImage;
+  const resolved = shouldPersist
     ? await resolveImage({ url, alt, blockId: block.id })
     : { ref: url, url };
 
