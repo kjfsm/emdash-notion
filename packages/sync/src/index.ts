@@ -21,7 +21,7 @@ export function notionSyncPlugin(): PluginDescriptor {
 
     storage: {
       // Notion pageId ↔ emdash contentId のマッピングと同期ハッシュ。
-      syncMap: { indexes: ["emdashId", "updatedAt"] },
+      syncMap: { indexes: ["emdashId", "updatedAt", "collection"] },
     },
 
     // WHY: emdash@0.27.0 は admin.settingsSchema だけでは設定 UI を自動生成しない
