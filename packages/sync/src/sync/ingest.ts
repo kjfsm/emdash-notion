@@ -3,14 +3,15 @@ import type { PluginContext } from "emdash";
 import { findMappingForParent, isConfigReady, loadConfig } from "../config.js";
 import { createOgpFetcher } from "../media/ogp.js";
 import { createFileResolver, createImageResolver } from "../media/resolve.js";
-import { NotionClient } from "../notion/client.js";
+import { NotionApiError, NotionClient } from "../notion/client.js";
 import { fetchPage } from "../notion/fetch-page.js";
 import { mapProperties } from "../notion/properties.js";
 import { notionBlocksToPortableText } from "../portable-text/from-notion.js";
+import { deleteSyncedPage } from "./delete.js";
 import { stableHash } from "./hash.js";
 import { deleteMapping, getMapping, putMapping } from "./sync-map.js";
 
-export type IngestStatus = "created" | "updated" | "skipped" | "unchanged";
+export type IngestStatus = "created" | "updated" | "skipped" | "unchanged" | "deleted";
 
 export interface IngestResult {
   status: IngestStatus;
@@ -33,10 +34,28 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
   }
 
   const client = new NotionClient(ctx.http, config.notionToken);
-  const { page, blocks, truncated } = await fetchPage(client, pageId, {
-    onTruncate: (n) =>
-      ctx.log.warn("notion block tree truncated at request budget", { pageId, requests: n }),
-  });
+  const fallbackCollections = config.mappings.map((m) => m.collection);
+
+  let page, blocks, truncated;
+  try {
+    ({ page, blocks, truncated } = await fetchPage(client, pageId, {
+      onTruncate: (n) =>
+        ctx.log.warn("notion block tree truncated at request budget", { pageId, requests: n }),
+    }));
+  } catch (err) {
+    // 層3（404 フォールバック）: ページが完全削除され取得できない場合、既に同期済みなら
+    // emdash 側をゴミ箱へ移す。未同期ページの 404 は単に対象外として skip する。
+    if (err instanceof NotionApiError && err.status === 404) {
+      return deleteSyncedPage(ctx, pageId, fallbackCollections);
+    }
+    throw err;
+  }
+
+  // 層2（ingest 内防御）: webhook のイベント種別に依存せず、アーカイブ/ゴミ箱入りを検知する
+  // （syncAll 経由や、アーカイブ後に届いた別種の webhook からもこの分岐を通す）。
+  if (page.archived || page.in_trash) {
+    return deleteSyncedPage(ctx, pageId, fallbackCollections);
+  }
 
   const mapping = findMappingForParent(config.mappings, page.parent);
   if (!mapping) {
@@ -73,15 +92,24 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
   // 記録する。あとで全量取得できた（truncated=false の）同期が走れば必ずハッシュが変わり、
   // last_edited_time が同じでも欠落が上書き修復される（unchanged で固定されない）。
   const hash = stableHash({ title, body, author, slug, truncated });
-  const existing = await getMapping(ctx, page.id);
+  const existingRaw = await getMapping(ctx, page.id);
 
-  if (existing?.pending) {
+  if (existingRaw?.pending) {
     // 別リクエストがこのページを新規作成中（下記の予約参照）。二重作成を避けるため今回は何もしない。
     return {
       status: "skipped",
       reason: "concurrent ingest already in progress for this page",
       unsupported,
     };
+  }
+
+  // 復活（undelete）判定: 以前ゴミ箱へ移したページが再び ingest された場合、emdash 側の生存を
+  // 確認する。ゴミ箱内（get が null）なら新規作成として扱う。手動復元済み（get が非 null）
+  // なら通常の update 扱いにする。
+  let existing = existingRaw;
+  if (existingRaw?.deletedAt) {
+    const alive = await ctx.content!.get!(mapping.collection, existingRaw.emdashId);
+    existing = alive ? existingRaw : null;
   }
 
   if (existing && existing.hash === hash && existing.notionLastEdited === page.last_edited_time) {
@@ -110,6 +138,7 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
       truncated,
       pending: true,
       claimId,
+      collection: mapping.collection,
     });
     const afterClaim = await getMapping(ctx, page.id);
     if (afterClaim?.claimId !== claimId) {
@@ -149,6 +178,7 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
     hash,
     notionLastEdited: page.last_edited_time,
     truncated,
+    collection: mapping.collection,
   });
 
   ctx.log.info("notion page synced", {

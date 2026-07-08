@@ -49,6 +49,8 @@ export interface NotionPage {
   created_time: string;
   last_edited_time: string;
   archived: boolean;
+  /** ゴミ箱に入っているか。`archived` とは別のフラグで、両方 true になりうる。 */
+  in_trash?: boolean;
   parent: NotionParent;
   properties: Record<string, NotionProperty>;
 }

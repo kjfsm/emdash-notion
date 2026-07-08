@@ -427,3 +427,144 @@ describe("ingestPage", () => {
     expect(second.truncated).toBe(false);
   });
 });
+
+describe("ingestPage の削除・アーカイブ検知", () => {
+  it("archived:true のページは content.delete してゴミ箱へ移し、syncMap に deletedAt/collection を残す", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
+      children: { page1: { results: [paragraph("b1", "Hello body")] } },
+    });
+    const t = createTestContext({ kv, fetch });
+    await ingestPage(t.ctx, "page1");
+    expect(t.deleted).toHaveLength(0);
+
+    const archivedFetch = makeNotionHttp({
+      pages: { page1: { ...notionPage("page1", "2026-02-02T00:00:00.000Z"), archived: true } },
+      children: {},
+    });
+    const t2 = createTestContext({ kv, fetch: archivedFetch });
+    t2.syncStore.set("page1", t.syncStore.get("page1"));
+
+    const res = await ingestPage(t2.ctx, "page1");
+    expect(res.status).toBe("deleted");
+    expect(t2.deleted).toEqual([{ collection: "posts", id: res.emdashId }]);
+    const stored = t2.syncStore.get("page1") as { deletedAt?: string; collection?: string };
+    expect(stored.deletedAt).toBeTruthy();
+    expect(stored.collection).toBe("posts");
+  });
+
+  it("in_trash:true のページも削除フローに入る", async () => {
+    const fetch = makeNotionHttp({
+      pages: {
+        page1: { ...notionPage("page1", "2026-02-01T00:00:00.000Z"), in_trash: true },
+      },
+      children: {},
+    });
+    const t = createTestContext({ kv, fetch });
+    t.syncStore.set("page1", {
+      emdashId: "content_1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "abc",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("deleted");
+    expect(t.deleted).toEqual([{ collection: "posts", id: "content_1" }]);
+  });
+
+  it("404（ページ完全削除）で既存マッピングがあれば削除フローに入る", async () => {
+    const fetch = makeNotionHttp({ pages: {}, children: {} });
+    const t = createTestContext({ kv, fetch });
+    t.syncStore.set("page1", {
+      emdashId: "content_1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "abc",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("deleted");
+    expect(t.deleted).toEqual([{ collection: "posts", id: "content_1" }]);
+  });
+
+  it("404 で未同期ページなら skipped", async () => {
+    const fetch = makeNotionHttp({ pages: {}, children: {} });
+    const t = createTestContext({ kv, fetch });
+
+    const res = await ingestPage(t.ctx, "unknown-page");
+    expect(res.status).toBe("skipped");
+    expect(t.deleted).toHaveLength(0);
+  });
+
+  it("deletedAt 済みで emdash 側が生存していなければ新規作成（復活）し、deletedAt をクリアする", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-03-01T00:00:00.000Z") },
+      children: { page1: { results: [paragraph("b1", "revived body")] } },
+    });
+    const t = createTestContext({ kv, fetch, onGet: () => null });
+    t.syncStore.set("page1", {
+      emdashId: "content_old",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "stale-hash",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+      deletedAt: "2026-02-01T00:00:00.000Z",
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("created");
+    expect(t.created).toHaveLength(1);
+    const stored = t.syncStore.get("page1") as { deletedAt?: string; emdashId: string };
+    expect(stored.deletedAt).toBeUndefined();
+    expect(stored.emdashId).toBe(res.emdashId);
+  });
+
+  it("deletedAt 済みで emdash 側が生存していれば通常の update 扱いにする", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: notionPage("page1", "2026-03-01T00:00:00.000Z") },
+      children: { page1: { results: [paragraph("b1", "restored body")] } },
+    });
+    const t = createTestContext({
+      kv,
+      fetch,
+      onGet: (collection, id) =>
+        collection === "posts" && id === "content_restored" ? { title: "old" } : null,
+    });
+    t.syncStore.set("page1", {
+      emdashId: "content_restored",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "stale-hash",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+      deletedAt: "2026-02-01T00:00:00.000Z",
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("updated");
+    expect(res.emdashId).toBe("content_restored");
+    expect(t.updated).toHaveLength(1);
+  });
+
+  it("二重削除は unchanged（冪等）", async () => {
+    const fetch = makeNotionHttp({
+      pages: { page1: { ...notionPage("page1", "2026-02-01T00:00:00.000Z"), archived: true } },
+      children: {},
+    });
+    const t = createTestContext({ kv, fetch });
+    t.syncStore.set("page1", {
+      emdashId: "content_1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "abc",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+      deletedAt: "2026-01-15T00:00:00.000Z",
+    });
+
+    const res = await ingestPage(t.ctx, "page1");
+    expect(res.status).toBe("unchanged");
+    expect(t.deleted).toHaveLength(0);
+  });
+});

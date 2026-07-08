@@ -2,8 +2,10 @@ import type { PluginContext } from "emdash";
 
 import { isConfigReady, loadConfig } from "../config.js";
 import { defaultLocale, getMessages, type Messages } from "../i18n/index.js";
-import { NotionClient } from "../notion/client.js";
+import { NotionApiError, NotionClient } from "../notion/client.js";
+import { deleteSyncedPage } from "./delete.js";
 import { ingestPage } from "./ingest.js";
+import { iterateMappings } from "./sync-map.js";
 
 export interface BulkSyncResult {
   total: number;
@@ -14,6 +16,8 @@ export interface BulkSyncResult {
   failed: number;
   /** 予算超過で本文末尾が欠落したまま保存されたページ数。 */
   truncated: number;
+  /** Notion 側で削除・アーカイブされ、emdash 側をゴミ箱へ移したページ数。 */
+  deleted: number;
   errors: string[];
 }
 
@@ -34,6 +38,7 @@ export async function syncAll(
     skipped: 0,
     failed: 0,
     truncated: 0,
+    deleted: 0,
     errors: [],
   };
 
@@ -48,6 +53,9 @@ export async function syncAll(
 
   // WHY: 重複 databaseId の検証は loadConfig 内で行う（ingestPage/webhook 経路にも自動で効かせるため）。
   const client = new NotionClient(ctx.http, config.notionToken);
+  // WHY: Notion の queryDatabase はアーカイブ/ゴミ箱入りのページを返さない。DB クエリで見えた
+  // pageId を記録しておき、後段の照合パスで「同期済みだが今回見えなくなったページ」を検知する。
+  const seenPageIds = new Set<string>();
 
   for (const mapping of config.mappings) {
     if (!mapping.databaseId || !mapping.collection) continue;
@@ -60,12 +68,14 @@ export async function syncAll(
         const page = await client.queryDatabase(mapping.databaseId, cursor);
 
         for (const notionPage of page.results) {
+          seenPageIds.add(notionPage.id);
           result.total++;
           try {
             const outcome = await ingestPage(ctx, notionPage.id);
             if (outcome.status === "created") result.created++;
             else if (outcome.status === "updated") result.updated++;
             else if (outcome.status === "unchanged") result.unchanged++;
+            else if (outcome.status === "deleted") result.deleted++;
             else result.skipped++;
             if (outcome.truncated) result.truncated++;
           } catch (err) {
@@ -94,5 +104,48 @@ export async function syncAll(
     }
   }
 
+  await reconcileDeletions(ctx, client, config.mappings, seenPageIds, result);
+
   return result;
+}
+
+/**
+ * 照合パス: syncMap にあるが今回の DB クエリで見えなくなったページ（Notion の queryDatabase は
+ * アーカイブ/ゴミ箱入りのページを返さない）について、実際に削除・アーカイブされたのか
+ * （生存していて単に別 DB へ移動しただけではないか）を 1 件ずつ確認し、削除済みなら
+ * emdash 側もゴミ箱へ移す。
+ */
+async function reconcileDeletions(
+  ctx: PluginContext,
+  client: NotionClient,
+  mappings: { collection: string }[],
+  seenPageIds: Set<string>,
+  result: BulkSyncResult,
+): Promise<void> {
+  const configuredCollections = new Set(mappings.map((m) => m.collection));
+
+  for await (const record of iterateMappings(ctx)) {
+    const data = record.data;
+    if (data.pending || data.deletedAt) continue;
+    if (!data.collection || !configuredCollections.has(data.collection)) continue;
+    if (seenPageIds.has(record.id)) continue;
+
+    try {
+      const page = await client.retrievePage(record.id);
+      if (!page.archived && !page.in_trash) continue; // 生存中（別 DB へ移動等）。何もしない。
+      const outcome = await deleteSyncedPage(ctx, record.id, [data.collection]);
+      if (outcome.status === "deleted") result.deleted++;
+    } catch (err) {
+      if (err instanceof NotionApiError && err.status === 404) {
+        const outcome = await deleteSyncedPage(ctx, record.id, [data.collection]);
+        if (outcome.status === "deleted") result.deleted++;
+        continue;
+      }
+      result.errors.push(`${record.id}: ${err instanceof Error ? err.message : String(err)}`);
+      ctx.log.warn("manual sync: reconciliation check failed", {
+        pageId: record.id,
+        error: String(err),
+      });
+    }
+  }
 }

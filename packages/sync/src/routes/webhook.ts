@@ -4,6 +4,7 @@ import type { SandboxedRouteContext } from "emdash/plugin";
 import { loadConfig } from "../config.js";
 import { verifyWebhookToken } from "../notion/signature.js";
 import type { NotionWebhookPayload } from "../notion/types.js";
+import { deleteSyncedPage } from "../sync/delete.js";
 import { ingestPage } from "../sync/ingest.js";
 
 /** Webhook ペイロードから対象 pageId を取り出す。ページイベント以外は null。 */
@@ -53,6 +54,18 @@ export async function handleWebhook(
 
   const pageId = extractPageId(payload);
   if (!pageId) return { ok: true, skipped: "no page entity in payload" };
+
+  // page.deleted はページ本体が既に取得できない（または取得すら無駄な）イベントのため、
+  // fetchPage を経由せず直接削除フローに入る。page.undeleted はここでは特別扱いせず、
+  // 通常の ingestPage に流す（ingest 側の復活判定が生存確認込みで処理する）。
+  if (payload.type === "page.deleted") {
+    const result = await deleteSyncedPage(
+      ctx,
+      pageId,
+      config.mappings.map((m) => m.collection),
+    );
+    return { ok: true, ...result };
+  }
 
   const result = await ingestPage(ctx, pageId);
   return { ok: true, ...result };

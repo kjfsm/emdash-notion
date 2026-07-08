@@ -9,6 +9,8 @@ export interface SyncCounts {
   failed: number;
   /** 予算超過で本文末尾が欠落したまま保存されたページ数。 */
   truncated: number;
+  /** Notion 側で削除・アーカイブされ、emdash 側をゴミ箱へ移したページ数。 */
+  deleted: number;
 }
 
 /**
@@ -150,7 +152,7 @@ const en: Messages = {
   syncDoneTitle: "Manual fetch complete",
   syncSummary: (c) =>
     `${c.total} target(s) — created ${c.created} / updated ${c.updated} / ` +
-    `unchanged ${c.unchanged} / skipped ${c.skipped} / failed ${c.failed}`,
+    `unchanged ${c.unchanged} / deleted ${c.deleted} / skipped ${c.skipped} / failed ${c.failed}`,
   syncFailuresSuffix: (errors) => ` (failed: ${errors.join(" / ")})`,
   syncTruncatedSuffix: (truncated) =>
     ` (⚠ ${truncated} page(s) exceeded the request budget and were saved with the tail of the body missing; they will be repaired on the next full sync)`,
@@ -233,7 +235,7 @@ const ja: Messages = {
   syncDoneTitle: "手動取得が完了しました",
   syncSummary: (c) =>
     `対象 ${c.total} 件中 — 新規作成 ${c.created} / 更新 ${c.updated} / ` +
-    `変更なし ${c.unchanged} / スキップ ${c.skipped} / 失敗 ${c.failed}`,
+    `変更なし ${c.unchanged} / 削除 ${c.deleted} / スキップ ${c.skipped} / 失敗 ${c.failed}`,
   syncFailuresSuffix: (errors) => `（失敗: ${errors.join(" / ")}）`,
   syncTruncatedSuffix: (truncated) =>
     `（⚠ ${truncated} 件がリクエスト予算を超過し、本文末尾が欠落したまま保存されました。次回の全量同期で修復されます）`,

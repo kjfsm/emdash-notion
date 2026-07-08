@@ -18,12 +18,14 @@ A pnpm monorepo that receives Notion webhooks, converts pages to [Portable Text]
 - Supports multiple emdash-collection ⇔ Notion-database mappings
 - A “Manual fetch” button in the admin bulk-syncs every configured mapping at once
 - Keeps a Notion pageId ↔ EmDash contentId map in `ctx.storage.syncMap` (to skip no-op webhooks)
+- When a synced page is deleted or archived in Notion, the corresponding EmDash content is moved to trash (soft delete). If it's later restored (undeleted) in Notion, the next sync re-creates it as new content. Detected three ways: the `page.deleted`/`page.undeleted` webhook event type, an `archived`/`in_trash` check inside every ingest (also covers pages reached via a manual fetch), and a 404 fallback when the page is fully deleted. A manual fetch also reconciles pages that stopped appearing in Notion's database query (which excludes archived pages) by checking each one individually — pages that are still alive elsewhere are left untouched
+- Notion API calls retry 429/5xx responses with exponential backoff (up to 3 retries) and honor `Retry-After` (capped at 30s)
 
 ## Known limitations
 
 - **No reverse sync (EmDash → Notion).** Possible via a `content:afterSave` hook, but out of scope for this MVP.
 - **Notion's official `X-Notion-Signature` (raw-body HMAC) cannot be verified.** EmDash always parses the request body before handing it to plugin routes (native or sandboxed), so the raw bytes are unavailable. Instead, a shared secret is passed in the subscription URL's `?token=` query and compared in constant time.
-- **EmDash's system slug column cannot be set.** `ctx.content.create/update` accepts field data only, so the value written to the “slug field slug” is stored as a regular data field, not the URL-routing slug column.
+- **EmDash's system `slug`/`status` columns cannot be set from a plugin.** `ctx.content.create/update` only accepts `{ type, data }` — system columns are filtered out server-side, so the value written to the “slug field slug” is stored as a regular data field (not the URL-routing slug column), and every synced item is created as `draft` regardless of Notion's publish state. This is an upstream EmDash plugin-API limitation, not a bug in this plugin; EmDash's REST API (Bearer-token authenticated) _can_ set both, so a future version could optionally write through it instead of `ctx.content`.
 - The author/slug property dropdowns aggregate property names across **all** databases shared with the integration (not filtered to the selected row's database).
 - EmDash exposes no schema-introspection or raw-DB API to plugins (deliberately locked down). So the “emdash collection slug” is free text, and the title/body/author/slug field slugs are picked from a `list-fields` dropdown that reverse-engineers field names from the mapped collection's existing content. If a collection has no content yet, no candidates appear.
 - The body field slug defaults to `content` (matching EmDash's standard `pages`/`posts` seed). Author/slug field slugs default to blank (not synced); if set and the target collection lacks that field, only that field is skipped (a missing title/body field still errors).
@@ -91,6 +93,8 @@ Other Notion blocks (tables, columns, video/audio/file/pdf, embeds, images) are 
 | `--notion-callout-bg`         | callout   | Background color      |
 | `--notion-todo-checked-color` | to-do     | Checked mark color    |
 | `--notion-todo-indent`        | to-do     | Nested indent width   |
+
+Only callout and to-do expose theme variables. `notionBookmark`, `notionEquation`, and `divider` have no CSS custom properties (they don't yet support dark mode) — to adjust their colors/spacing, override the `.notion-bookmark`, `.notion-equation`, or `.notion-divider` classes from your site's global CSS with higher specificity.
 
 ## Distribution
 

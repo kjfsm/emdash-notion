@@ -29,6 +29,7 @@ export function mapStorage() {
 export interface TestContextOptions {
   kv?: Record<string, unknown>;
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
+  onGet?: (collection: string, id: string) => Record<string, unknown> | null;
   onCreate?: (collection: string, data: Record<string, unknown>) => { id: string };
   onUpdate?: (collection: string, id: string, data: Record<string, unknown>) => { id: string };
   onDelete?: (collection: string, id: string) => void;
@@ -78,7 +79,21 @@ export function createTestContext(options: TestContextOptions = {}): TestContext
     log: { debug: log("debug"), info: log("info"), warn: log("warn"), error: log("error") },
     http: options.fetch ? { fetch: options.fetch } : undefined,
     content: {
-      get: async () => null,
+      get: async (collection: string, id: string) => {
+        const data = options.onGet?.(collection, id);
+        if (!data) return null;
+        return {
+          id,
+          type: collection,
+          slug: null,
+          status: "draft",
+          data,
+          locale: "en",
+          createdAt: "",
+          updatedAt: "",
+          publishedAt: null,
+        };
+      },
       list: async () => ({ items: [], hasMore: false }),
       create: async (collection: string, data: Record<string, unknown>) => {
         const item = options.onCreate?.(collection, data) ?? { id: `content_${++idSeq}` };

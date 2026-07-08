@@ -83,4 +83,74 @@ describe("handleWebhook", () => {
     expect(res.ok).toBe(true);
     expect(res.skipped).toBeDefined();
   });
+
+  it("page.deleted イベントは Notion のページ取得を経由せず content.delete する", async () => {
+    let fetchCalled = false;
+    const fetch = async () => {
+      fetchCalled = true;
+      return new Response("{}");
+    };
+    const t = createTestContext({
+      kv: {
+        "settings:webhookToken": "right",
+        "settings:notionToken": "tok",
+        "settings:mappings": [{ collection: "posts", databaseId: "db1" }],
+      },
+      fetch,
+    });
+    t.syncStore.set("p1", {
+      emdashId: "content_1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "abc",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+    });
+
+    const routeCtx = withRoute(
+      t.ctx,
+      { type: "page.deleted", entity: { id: "p1", type: "page" } },
+      "https://x/webhook?token=right",
+    );
+    const res = (await handleWebhook(...routeCtx)) as { ok: boolean; status: string };
+
+    expect(res.ok).toBe(true);
+    expect(res.status).toBe("deleted");
+    expect(fetchCalled).toBe(false);
+    expect(t.deleted).toEqual([{ collection: "posts", id: "content_1" }]);
+  });
+
+  it("page.undeleted イベントは通常の ingestPage に流れる", async () => {
+    const fetch = makeNotionHttp({
+      pages: {
+        p1: {
+          object: "page",
+          id: "p1",
+          created_time: "2026-01-01T00:00:00.000Z",
+          last_edited_time: "2026-02-01T00:00:00.000Z",
+          archived: false,
+          parent: { type: "data_source_id", data_source_id: "db1" },
+          properties: { Name: { id: "t", type: "title", title: [] } },
+        },
+      },
+      children: { p1: { results: [] } },
+    });
+    const t = createTestContext({
+      kv: {
+        "settings:webhookToken": "right",
+        "settings:notionToken": "tok",
+        "settings:mappings": [{ collection: "posts", databaseId: "db1" }],
+      },
+      fetch,
+    });
+
+    const routeCtx = withRoute(
+      t.ctx,
+      { type: "page.undeleted", entity: { id: "p1", type: "page" } },
+      "https://x/webhook?token=right",
+    );
+    const res = (await handleWebhook(...routeCtx)) as { ok: boolean; status: string };
+
+    expect(res.ok).toBe(true);
+    expect(res.status).toBe("created");
+  });
 });

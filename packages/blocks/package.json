@@ -60,8 +60,12 @@
     "build": "tsdown src/index.ts src/notion-color.ts src/safe-url.ts --dts.eager",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text",
     "lint": "oxlint && eslint .",
     "lint:fix": "oxlint --fix && eslint . --fix",
+    "publint": "publint",
+    "attw": "attw --pack . --profile esm-only --exclude-entrypoints astro NotionBookmark.astro NotionCallout.astro NotionDivider.astro NotionEquation.astro NotionToggle.astro NotionTodo.astro",
+    "size": "size-limit",
     "release:local": "npm publish --no-provenance"
   },
   "devDependencies": {

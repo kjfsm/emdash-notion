@@ -97,3 +97,97 @@ describe("syncAll", () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 });
+
+describe("syncAll の照合パス（アーカイブ/削除の後追い検知）", () => {
+  it("DB クエリに現れなくなった同期済みページが archived になっていれば削除する", async () => {
+    // db-posts のクエリ結果は空（p1 はもう返らない）が、p1 自体は取得できて archived:true。
+    const fetch = makeMultiDbHttp({ "db-posts": [] });
+    const archivedPage = { ...notionPage("p1", "db-posts", "Old Post"), archived: true };
+    const wrappedFetch = async (url: string) => {
+      const u = new URL(url);
+      if (u.pathname === "/v1/pages/p1") {
+        return new Response(JSON.stringify(archivedPage), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return fetch(url);
+    };
+    const t = createTestContext({
+      kv: {
+        "settings:notionToken": "tok",
+        "settings:mappings": [{ collection: "posts", databaseId: "db-posts" }],
+      },
+      fetch: wrappedFetch,
+    });
+    t.syncStore.set("p1", {
+      emdashId: "content_1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "abc",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+    });
+
+    const result = await syncAll(t.ctx);
+
+    expect(result.deleted).toBe(1);
+    expect(t.deleted).toEqual([{ collection: "posts", id: "content_1" }]);
+  });
+
+  it("生存していて単に見えなくなっただけ（別 DB 移動等）のページは削除しない", async () => {
+    const fetch = makeMultiDbHttp({ "db-posts": [] });
+    const alivePage = notionPage("p1", "db-other", "Moved Post");
+    const wrappedFetch = async (url: string) => {
+      const u = new URL(url);
+      if (u.pathname === "/v1/pages/p1") {
+        return new Response(JSON.stringify(alivePage), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return fetch(url);
+    };
+    const t = createTestContext({
+      kv: {
+        "settings:notionToken": "tok",
+        "settings:mappings": [{ collection: "posts", databaseId: "db-posts" }],
+      },
+      fetch: wrappedFetch,
+    });
+    t.syncStore.set("p1", {
+      emdashId: "content_1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "abc",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+    });
+
+    const result = await syncAll(t.ctx);
+
+    expect(result.deleted).toBe(0);
+    expect(t.deleted).toHaveLength(0);
+  });
+
+  it("404（完全削除）も照合パスで検知して削除する", async () => {
+    const fetch = makeMultiDbHttp({ "db-posts": [] });
+    const t = createTestContext({
+      kv: {
+        "settings:notionToken": "tok",
+        "settings:mappings": [{ collection: "posts", databaseId: "db-posts" }],
+      },
+      fetch,
+    });
+    t.syncStore.set("p1", {
+      emdashId: "content_1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      hash: "abc",
+      notionLastEdited: "2026-01-01T00:00:00.000Z",
+      collection: "posts",
+    });
+
+    const result = await syncAll(t.ctx);
+
+    expect(result.deleted).toBe(1);
+    expect(t.deleted).toEqual([{ collection: "posts", id: "content_1" }]);
+  });
+});

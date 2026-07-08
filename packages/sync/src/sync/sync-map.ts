@@ -19,6 +19,13 @@ export interface SyncRecord {
   pending?: boolean;
   /** 予約の所有者を識別するランダム値。再読込時に自分の予約がまだ有効か確認するために使う。 */
   claimId?: string;
+  /**
+   * 書き込み先の emdash コレクション slug。削除時（404/archived/in_trash）に emdash 側の
+   * ページ本体を経由せず削除先コレクションを特定するため、書き込みの都度保存しておく。
+   */
+  collection?: string;
+  /** Notion 側で削除/アーカイブされ、emdash 側をゴミ箱へ移した時刻（ISO8601）。 */
+  deletedAt?: string;
 }
 
 function collection(ctx: PluginContext): StorageCollection<SyncRecord> {
@@ -40,4 +47,20 @@ export function putMapping(
 /** 予約（`pending`）が失敗に終わった場合に、次回やり直せるようレコードごと消す。 */
 export function deleteMapping(ctx: PluginContext, notionId: string): Promise<boolean> {
   return collection(ctx).delete(notionId);
+}
+
+/**
+ * 全 syncMap レコードをページングしながら列挙する。`syncAll` の照合パス
+ * （Notion 側で削除・アーカイブされたが DB クエリには現れなくなったページの検知）が使う。
+ */
+export async function* iterateMappings(
+  ctx: PluginContext,
+): AsyncGenerator<{ id: string; data: SyncRecord }> {
+  const col = collection(ctx);
+  let cursor: string | undefined;
+  do {
+    const page = await col.query({ cursor, limit: 100 });
+    yield* page.items;
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
 }
