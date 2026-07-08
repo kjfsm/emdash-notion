@@ -49,6 +49,6 @@
 - monorepo だが各パッケージは独立してバージョニングされる（changesets の通常運用）。
 - **canary（自動）**: `main` push ごとに、pending changeset があるパッケージを `0.0.0-canary-<sha>` として npm の `canary` タグへ公開（`release.yml`。changeset は消費しない）
 - **stable（手動）**: メンテナが `Release Stable` を workflow_dispatch → "Version Packages" PR をマージすると、対象パッケージが `latest` へ公開（`release-stable.yml`）
-- 初回公開など CI トークンで 404 になる場合は、各パッケージルート（`packages/sync`・`packages/blocks`）で `pnpm run release:local`（`pnpm publish --no-git-checks --config.provenance=false`）を手動実行するか、ルートで `pnpm release:local`（`pnpm -r publish --no-git-checks --config.provenance=false`）を実行する。**`pnpm publish` に `--no-provenance` フラグは存在しない**（npm CLI 固有のフラグで pnpm には無く、指定しても無視されて `publishConfig.provenance: true` が有効なままになる）ため、`--config.provenance=false` で明示的に上書きする。
+- 初回公開など CI トークンで 404 になる場合は、事前に `pnpm build` した上で、各パッケージルート（`packages/sync`・`packages/blocks`）で `pnpm run release:local`（`npm publish --no-provenance`）を手動実行するか、ルートで `pnpm release:local`（`pnpm -r --if-present run release:local` が各パッケージの同スクリプトを実行）する。**`pnpm publish` は `publishConfig.provenance: true` を無効化できない**（`--no-provenance`／`--config.provenance=false` のいずれを渡しても、pnpm 内部の公開処理が provenance 生成を試みてローカルでは失敗する。実測で確認済み）ため、`release:local` は pnpm を経由せず **npm CLI の `npm publish --no-provenance` を直接呼ぶ**（`npm publish` は CLI フラグで `publishConfig.provenance` を正しく上書きできる）。
 
 必要な GitHub secrets: `NPM_TOKEN`・`RELEASE_PAT`（任意で `CODECOV_TOKEN`）。
