@@ -49,7 +49,7 @@
     "test": "vitest run",
     "lint": "oxlint && eslint .",
     "lint:fix": "oxlint --fix && eslint . --fix",
-    "release:local": "pnpm publish --no-provenance --no-git-checks"
+    "release:local": "npm_config_provenance=false pnpm publish --no-git-checks"
   },
   "devDependencies": {
     "@emdash-notion/types": "workspace:*",

@@ -49,7 +49,7 @@
     "publint": "publint --strict",
     "attw": "attw --pack . --profile esm-only",
     "size": "size-limit",
-    "release:local": "pnpm publish --no-provenance --no-git-checks"
+    "release:local": "npm_config_provenance=false pnpm publish --no-git-checks"
   },
   "devDependencies": {
     "@emdash-cms/blocks": ">=0.27.0",
