@@ -53,7 +53,7 @@
 Notion API・EmDash API の実ソースやレスポンスを検証して判明した、ドキュメントや想定と異なる事実をここに日付付きで蓄積する。
 
 <!-- confirmed 2026-07-08: EmDash の capability 名は `content:read`/`content:write`/`media:read`/`media:write`/`network:request`（公式スキル `creating-plugins` と一致）。`network:fetch` ではない。 -->
-<!-- confirmed 2026-07-08: `ctx.storage`（StorageCollection）に原子的な compare-and-set/putIfAbsent は無い（get/put/exists/query 等のみ）。そのため webhook の並行重複配信に対する二重作成を完全排他できず、`ingest.ts` は create 後の照合で best-effort に重複を消す。 -->
+<!-- confirmed 2026-07-08: `ctx.storage`（StorageCollection）に原子的な compare-and-set/putIfAbsent は無い（get/put/exists/query 等のみ）。そのため webhook の並行重複配信に対する二重作成を完全には排他できない。`ingest.ts` は「create 前」に軽量な予約レコード（pending + claimId）を書いて直後に読み直す方式で無防備な区間を縮めている（create 後に照合して削除する旧方式は、真の同時実行では両者が削除条件を満たさず二重作成を防げないレビューで判明したため撤回した）。真の同時書き込み（両者が予約の読み直し前に書き込む）は依然として理論上すり抜けうる best-effort。 -->
 <!-- confirmed 2026-07-08: EmDash はプラグインにコレクションのスキーマ取得 API を公開していない。存在しないフィールドへの書き込みは D1/SQLite のエラー文言（"no such column: X" / "has no column named X"）でしか検知できず、`ingest.ts` の MISSING_COLUMN_RE はこの文言に依存する脆い実装（API が公開されたら差し替える）。 -->
 <!-- confirmed 2026-07-08: emdash は基礎 Portable Text 型（PortableTextSpan/MarkDef/標準ブロック）を公式 export するが、Notion 固有ブロック型は無い。また DB プロパティは値ではなくスキーマ定義（config）型で、ページの property 値型とは別物。 -->
 

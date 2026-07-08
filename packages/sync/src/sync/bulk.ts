@@ -1,6 +1,6 @@
 import type { PluginContext } from "emdash";
 
-import { findDuplicateDatabaseIds, isConfigReady, loadConfig } from "../config.js";
+import { isConfigReady, loadConfig } from "../config.js";
 import { defaultLocale, getMessages, type Messages } from "../i18n/index.js";
 import { NotionClient } from "../notion/client.js";
 import { ingestPage } from "./ingest.js";
@@ -46,13 +46,7 @@ export async function syncAll(
     return result;
   }
 
-  const duplicateDbIds = findDuplicateDatabaseIds(config.mappings);
-  if (duplicateDbIds.length > 0) {
-    ctx.log.warn("manual sync: duplicate databaseId across mappings (only the first wins)", {
-      databaseIds: duplicateDbIds,
-    });
-  }
-
+  // WHY: 重複 databaseId の検証は loadConfig 内で行う（ingestPage/webhook 経路にも自動で効かせるため）。
   const client = new NotionClient(ctx.http, config.notionToken);
 
   for (const mapping of config.mappings) {

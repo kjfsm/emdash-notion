@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { findDuplicateDatabaseIds } from "../src/config.js";
+import { findDuplicateDatabaseIds, loadConfig } from "../src/config.js";
+import { createTestContext } from "./helpers.js";
 
 function mapping(collection: string, databaseId: string) {
   return {
@@ -32,5 +33,31 @@ describe("findDuplicateDatabaseIds", () => {
 
   it("databaseId 未設定のマッピングは無視する", () => {
     expect(findDuplicateDatabaseIds([mapping("posts", ""), mapping("pages", "")])).toEqual([]);
+  });
+});
+
+describe("loadConfig の重複 databaseId 警告", () => {
+  it("webhook 経由（ingestPage）・手動同期（syncAll）のどちらも通る loadConfig 単体で警告する", async () => {
+    const t = createTestContext({
+      kv: {
+        "settings:mappings": [mapping("posts", "db1"), mapping("news", "db1")],
+      },
+    });
+    await loadConfig(t.ctx);
+    expect(
+      t.logs.some(
+        (l) => l.level === "warn" && l.message.includes("duplicate databaseId across mappings"),
+      ),
+    ).toBe(true);
+  });
+
+  it("重複が無ければ警告しない", async () => {
+    const t = createTestContext({
+      kv: {
+        "settings:mappings": [mapping("posts", "db1"), mapping("news", "db2")],
+      },
+    });
+    await loadConfig(t.ctx);
+    expect(t.logs.some((l) => l.level === "warn")).toBe(false);
   });
 });
