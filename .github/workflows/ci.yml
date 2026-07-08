@@ -50,5 +50,5 @@ jobs:
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: "./packages/sync/coverage/lcov.info"
+          files: "./packages/sync/coverage/lcov.info,./packages/blocks/coverage/lcov.info"
           fail_ci_if_error: false

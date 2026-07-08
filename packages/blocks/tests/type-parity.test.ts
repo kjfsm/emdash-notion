@@ -48,17 +48,18 @@ type AssignableTo<Sub, Super> = Sub extends Super
  * 再転記側にキーが欠けていても構造的部分型で通ってしまい見逃す。例: TodoNode から
  * `level` が抜けていたケース）。ネストしたフィールドの形状は `AssignableTo` 側が担保する。
  */
-type NoExtraKeys<Node, SyncType> = Exclude<keyof Node, keyof SyncType> extends never
-  ? Exclude<keyof SyncType, keyof Node | "_type"> extends never
-    ? true
+type NoExtraKeys<Node, SyncType> =
+  Exclude<keyof Node, keyof SyncType> extends never
+    ? Exclude<keyof SyncType, keyof Node | "_type"> extends never
+      ? true
+      : {
+          readonly __error: "sync の出力型にあるキーが notion-blocks の Props に無い";
+          missing: Exclude<keyof SyncType, keyof Node | "_type">;
+        }
     : {
-        readonly __error: "sync の出力型にあるキーが notion-blocks の Props に無い";
-        missing: Exclude<keyof SyncType, keyof Node | "_type">;
-      }
-  : {
-      readonly __error: "notion-blocks の Props に sync の出力型に無い余分なキーがある";
-      extra: Exclude<keyof Node, keyof SyncType>;
-    };
+        readonly __error: "notion-blocks の Props に sync の出力型に無い余分なキーがある";
+        extra: Exclude<keyof Node, keyof SyncType>;
+      };
 
 // sync の正準型 → blocks の Props node 形状 への代入可能性（描画側が読むフィールドを網羅している）。
 const _callout: AssignableTo<NotionCalloutBlock, CalloutNode> = true;
