@@ -18,12 +18,14 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 - 複数の emdash コレクションをそれぞれ別の Notion データベースへ紐づけ可能（コレクション ⇔ データベースの対応を複数登録できる）
 - 管理画面の「手動取得」ボタンで、設定済みの対応関係すべてを一括同期
 - Notion pageId ↔ emdash コンテンツ id の対応を `ctx.storage.syncMap` に保持（無変更 Webhook のスキップ用）
+- 同期済みページが Notion 側で削除・アーカイブされると、対応する emdash コンテンツをゴミ箱へ移す（論理削除）。その後 Notion 側で復元（undelete）されると、次回同期で新規コンテンツとして作り直される。検知は3通り: `page.deleted`/`page.undeleted` webhook イベント種別、ingest のたびに行う `archived`/`in_trash` チェック（手動取得経由のページにも効く）、ページが完全削除された場合の 404 フォールバック。手動取得では、Notion の DB クエリ（アーカイブ済みページは返らない）に現れなくなった同期済みページも個別に確認して照合する — 別の場所で生存しているページは削除しない
+- Notion API 呼び出しは 429/5xx を指数バックオフで最大 3 回リトライし、`Retry-After`（上限 30 秒）を尊重する
 
 ## できないこと（既知の制約）
 
 - **emdash → Notion の逆方向同期は未実装**（`content:afterSave` 等のフックで実現可能だが本 MVP では対象外）
 - **Notion 公式の `X-Notion-Signature`（生ボディ HMAC）は検証できない**。emdash はプラグインルートに渡す前に必ずリクエストボディを一度パースするため（native/sandboxed 問わず）、生バイトにアクセスできない。代わりに Notion 購読 URL の `?token=` クエリに共有シークレットを載せ、定数時間比較で検証する
-- **emdash のシステム slug 列は設定できない**。`ctx.content.create/update` はフィールドデータのみを受け付けるため、「slug フィールド Slug」で指定した値は通常のデータフィールドとして保存される（URL ルーティングに使われる slug 列とは別）
+- **emdash のシステム `slug`/`status` 列はプラグインから設定できない**。`ctx.content.create/update` は `{ type, data }` のみを受け付け、システム列はサーバー側で除外されるため、「slug フィールド Slug」で指定した値は通常のデータフィールドとして保存される（URL ルーティングに使われる slug 列とは別）。同期したコンテンツは Notion 側の公開状態に関わらず常に `draft` として作成される。これはこのプラグインの不具合ではなく emdash プラグイン API 側の制約であり、emdash の REST API（Bearer トークン認証）は両方とも設定可能なため、将来的には `ctx.content` の代わりに REST API 経由で書き込むモードを追加できる可能性がある
 - 著者/slug プロパティのドロップダウンは、integration と共有中の全データベースのプロパティ名を集約したもの（選択中の行のデータベースに絞り込んだ候補ではない）
 - emdash はプラグインにコレクション/フィールドのスキーマを問い合わせる API・生 DB アクセスを提供していない（意図的に塞がれている）。そのため「emdash コレクション Slug」は自由入力（既に存在するコレクション Slug を手入力する）。タイトル/本文/著者/slug の各フィールド Slug は、**設定済みの対応関係が指すコレクションの既存コンテンツからフィールド名を逆引きしたドロップダウン**（`list-fields`）から選べる。コレクションにコンテンツが 1 件も無い場合は候補が出ないため、その場合は既存コンテンツを 1 件作ってから設定し直すか、対応保存後にブラウザをリロードして選び直す
 - 本文フィールド Slug の既定値は emdash 標準シード（`pages`/`posts`）に合わせて `content`。著者/slug フィールド Slug は既定では空欄（同期しない）で、指定した場合に対象コレクションへそのフィールドが無ければ自動的にそのフィールドだけスキップして同期する（title/body フィールドが存在しない場合はエラーになる）
@@ -91,6 +93,8 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 | `--notion-callout-bg`         | callout        | 背景色                 |
 | `--notion-todo-checked-color` | to-do          | チェックマークの色     |
 | `--notion-todo-indent`        | to-do          | ネスト時のインデント幅 |
+
+テーマ変数があるのは callout と to-do のみ。`notionBookmark`・`notionEquation`・`divider` には CSS カスタムプロパティが無く（ダークモードにもまだ対応していない）、色や余白を変えたい場合はサイトのグローバル CSS から `.notion-bookmark`・`.notion-equation`・`.notion-divider` クラスをより高い詳細度で上書きする。
 
 ## 配布
 
