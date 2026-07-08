@@ -231,12 +231,13 @@ function syncResultBanner(result: BulkSyncResult, m: Messages): Block {
       variant: "error",
     });
   }
-  const summary = m.syncSummary(result);
+  let summary = m.syncSummary(result);
+  if (result.failed > 0) summary += m.syncFailuresSuffix(result.errors.slice(0, 3));
+  if (result.truncated > 0) summary += m.syncTruncatedSuffix(result.truncated);
   return blocks.banner({
     title: m.syncDoneTitle,
-    description:
-      result.failed > 0 ? summary + m.syncFailuresSuffix(result.errors.slice(0, 3)) : summary,
-    variant: result.failed > 0 ? "alert" : "default",
+    description: summary,
+    variant: result.failed > 0 || result.truncated > 0 ? "alert" : "default",
   });
 }
 

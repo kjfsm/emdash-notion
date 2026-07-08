@@ -17,6 +17,8 @@ export interface IngestResult {
   reason?: string;
   emdashId?: string;
   unsupported?: string[];
+  /** リクエスト予算超過で本文末尾が欠落したまま保存したとき true。 */
+  truncated?: boolean;
 }
 
 /** 1 つの Notion ページを取得・変換し、対応する emdash コレクションへ upsert する。 */
@@ -31,7 +33,7 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
   }
 
   const client = new NotionClient(ctx.http, config.notionToken);
-  const { page, blocks } = await fetchPage(client, pageId, {
+  const { page, blocks, truncated } = await fetchPage(client, pageId, {
     onTruncate: (n) =>
       ctx.log.warn("notion block tree truncated at request budget", { pageId, requests: n }),
   });
@@ -67,7 +69,10 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
 
   // WHY: emdash 側 last_edited_time とハッシュを比較し、無変更 Webhook の再書き込みと
   // （将来の逆方向同期での）ループを避ける。
-  const hash = stableHash({ title, body, author, slug });
+  // truncated をハッシュに含めることで、予算超過で欠落したまま保存された状態を「未確定」として
+  // 記録する。あとで全量取得できた（truncated=false の）同期が走れば必ずハッシュが変わり、
+  // last_edited_time が同じでも欠落が上書き修復される（unchanged で固定されない）。
+  const hash = stableHash({ title, body, author, slug, truncated });
   const existing = await getMapping(ctx, page.id);
 
   if (existing && existing.hash === hash && existing.notionLastEdited === page.last_edited_time) {
@@ -78,6 +83,24 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
     ? (d: Record<string, unknown>) => ctx.content!.update!(mapping.collection, existing.emdashId, d)
     : (d: Record<string, unknown>) => ctx.content!.create!(mapping.collection, d);
   const result = await writeContent(write, data, optionalFields, ctx, pageId);
+
+  // 冪等性の照合（新規作成パスのみ）。EmDash の storage には原子的な compare-and-set が
+  // 無いため get→create を完全排他できない。Notion の重複/並行配信で 2 リクエストとも
+  // existing===null を読むと二重作成が起きうる。そこで create 後にマッピングを読み直し、
+  // 並行リクエストが先に確定していれば今作った方を削除して勝者を採用する。これで逐次リトライと
+  // 多くの並行ケースを吸収できる（両者が同時に読み直し前だと稀にすり抜ける残存ウィンドウあり）。
+  if (!existing) {
+    const raced = await getMapping(ctx, page.id);
+    if (raced?.emdashId && raced.emdashId !== result.id) {
+      await ctx.content.delete?.(mapping.collection, result.id);
+      ctx.log.warn("notion sync: concurrent create detected, dropped duplicate", {
+        pageId: page.id,
+        kept: raced.emdashId,
+        dropped: result.id,
+      });
+      return { status: "unchanged", emdashId: raced.emdashId, unsupported };
+    }
+  }
 
   const status: IngestStatus = existing ? "updated" : "created";
   const emdashId = result.id;
@@ -95,11 +118,16 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
     status,
     published,
     collection: mapping.collection,
+    truncated,
   });
-  return { status, emdashId, unsupported };
+  return { status, emdashId, unsupported, truncated };
 }
 
-const MISSING_COLUMN_RE = /no column named[:\s]+["'`]?(\w+)["'`]?/i;
+// TODO: emdash がプラグインからコレクションスキーマを取得する API を公開したら、
+// このエラー文言依存の検知を「事前にフィールド存在を確認してから書く」方式へ差し替える。
+// 現状は emdash/D1 のエラーメッセージ文字列に依存しており脆い（CLAUDE.md 確認済みの技術メモ参照）。
+// 代表的な 2 系統（SQLite/D1: "no such column: X" / "table ... has no column named X"）を許容する。
+const MISSING_COLUMN_RE = /no (?:such )?column(?: named)?[:\s]+["'`]?(\w+)["'`]?/i;
 
 /**
  * `ctx.content.create/update` を実行する。emdash にはプラグインからコレクションのスキーマを

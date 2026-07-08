@@ -112,6 +112,23 @@ function stripDashes(id: string): string {
   return id.replace(/-/g, "").toLowerCase();
 }
 
+/**
+ * 同じ Notion データベースを複数コレクションへ割り当てているマッピングを検出する。
+ * `findMappingForParent` は先勝ちのため、重複があると 2 つ目以降が無警告で無視される。
+ * 正規化済み（ダッシュ除去・小文字化）の databaseId を返す。
+ */
+export function findDuplicateDatabaseIds(mappings: NotionMapping[]): string[] {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const m of mappings) {
+    if (!m.databaseId) continue;
+    const key = stripDashes(m.databaseId);
+    if (seen.has(key)) duplicates.add(key);
+    else seen.add(key);
+  }
+  return [...duplicates];
+}
+
 /** ページの parent（database_id / data_source_id）に一致するマッピングを探す。 */
 export function findMappingForParent(
   mappings: NotionMapping[],

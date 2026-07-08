@@ -1,6 +1,11 @@
 /**
  * Notion REST API のレスポンスのうち、notion-sync が実際に読む部分だけを写した最小型。
- * `@notionhq/client` に依存すると sandbox バンドルが重くなるため、自前で定義して自己完結させる。
+ * ランタイムで `@notionhq/client` に依存すると sandbox バンドルが重くなるため、読み取り・
+ * テスト構築の双方で扱いやすい緩い形状を自前で定義して自己完結させる。
+ * ただし実 API とのドリフトを検知するため、`tests/notion-types.test.ts` が公式
+ * `@notionhq/client` の型（`PageObjectResponse` 等）と本ファイルの構造互換を型レベルで検証する
+ * （公式型が変わり、ここで読む形状と食い違えば型テストが落ちる）。`@notionhq/client` は
+ * devDependency かつ `import type` 限定で、公開物・ランタイムには一切含めない。
  */
 
 export interface NotionAnnotations {
@@ -63,12 +68,22 @@ export interface NotionDatabaseTitleFragment {
   plain_text: string;
 }
 
+/**
+ * データベースのプロパティ「スキーマ定義」。ページの `NotionProperty`（値）とは別物で、
+ * notion-sync は候補列挙のため `type` とキー名しか読まない。
+ */
+export interface NotionDatabaseProperty {
+  id: string;
+  type: string;
+  [key: string]: unknown;
+}
+
 /** データベース（data source）のスキーマ。notion-sync が読む部分のみ。 */
 export interface NotionDatabase {
   object: "database";
   id: string;
   title: NotionDatabaseTitleFragment[];
-  properties: Record<string, NotionProperty>;
+  properties: Record<string, NotionDatabaseProperty>;
 }
 
 export interface NotionListResponse<T> {

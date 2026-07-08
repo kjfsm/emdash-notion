@@ -1,6 +1,6 @@
 import type { PluginContext } from "emdash";
 
-import { isConfigReady, loadConfig } from "../config.js";
+import { findDuplicateDatabaseIds, isConfigReady, loadConfig } from "../config.js";
 import { defaultLocale, getMessages, type Messages } from "../i18n/index.js";
 import { NotionClient } from "../notion/client.js";
 import { ingestPage } from "./ingest.js";
@@ -12,6 +12,8 @@ export interface BulkSyncResult {
   unchanged: number;
   skipped: number;
   failed: number;
+  /** 予算超過で本文末尾が欠落したまま保存されたページ数。 */
+  truncated: number;
   errors: string[];
 }
 
@@ -31,6 +33,7 @@ export async function syncAll(
     unchanged: 0,
     skipped: 0,
     failed: 0,
+    truncated: 0,
     errors: [],
   };
 
@@ -39,41 +42,62 @@ export async function syncAll(
     return result;
   }
   if (!ctx.http) {
-    result.errors.push("network:request capability unavailable");
+    result.errors.push(m.networkUnavailable);
     return result;
+  }
+
+  const duplicateDbIds = findDuplicateDatabaseIds(config.mappings);
+  if (duplicateDbIds.length > 0) {
+    ctx.log.warn("manual sync: duplicate databaseId across mappings (only the first wins)", {
+      databaseIds: duplicateDbIds,
+    });
   }
 
   const client = new NotionClient(ctx.http, config.notionToken);
 
   for (const mapping of config.mappings) {
     if (!mapping.databaseId || !mapping.collection) continue;
-    let cursor: string | undefined;
 
-    do {
-      const page = await client.queryDatabase(mapping.databaseId, cursor);
+    // WHY: queryDatabase 自体の失敗（1 DB の権限不足・削除済み等）が他の DB の同期を巻き込んで
+    // 全体を throw しないよう、DB 単位で try/catch し、失敗はその DB 分だけ errors に積んで継続する。
+    try {
+      let cursor: string | undefined;
+      do {
+        const page = await client.queryDatabase(mapping.databaseId, cursor);
 
-      for (const notionPage of page.results) {
-        result.total++;
-        try {
-          const outcome = await ingestPage(ctx, notionPage.id);
-          if (outcome.status === "created") result.created++;
-          else if (outcome.status === "updated") result.updated++;
-          else if (outcome.status === "unchanged") result.unchanged++;
-          else result.skipped++;
-        } catch (err) {
-          result.failed++;
-          result.errors.push(
-            `${notionPage.id}: ${err instanceof Error ? err.message : String(err)}`,
-          );
-          ctx.log.warn("manual sync: page ingest failed", {
-            pageId: notionPage.id,
-            error: String(err),
-          });
+        for (const notionPage of page.results) {
+          result.total++;
+          try {
+            const outcome = await ingestPage(ctx, notionPage.id);
+            if (outcome.status === "created") result.created++;
+            else if (outcome.status === "updated") result.updated++;
+            else if (outcome.status === "unchanged") result.unchanged++;
+            else result.skipped++;
+            if (outcome.truncated) result.truncated++;
+          } catch (err) {
+            result.failed++;
+            result.errors.push(
+              `${notionPage.id}: ${err instanceof Error ? err.message : String(err)}`,
+            );
+            ctx.log.warn("manual sync: page ingest failed", {
+              pageId: notionPage.id,
+              error: String(err),
+            });
+          }
         }
-      }
 
-      cursor = page.has_more && page.next_cursor ? page.next_cursor : undefined;
-    } while (cursor);
+        cursor = page.has_more && page.next_cursor ? page.next_cursor : undefined;
+      } while (cursor);
+    } catch (err) {
+      result.failed++;
+      result.errors.push(
+        `${mapping.databaseId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      ctx.log.warn("manual sync: database query failed", {
+        databaseId: mapping.databaseId,
+        error: String(err),
+      });
+    }
   }
 
   return result;

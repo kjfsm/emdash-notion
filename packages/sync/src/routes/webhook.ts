@@ -15,6 +15,12 @@ export function extractPageId(payload: NotionWebhookPayload): string | null {
   return null;
 }
 
+/** ログ用に秘密様の値を先頭数文字だけ残してマスクする。 */
+function maskToken(token: string): string {
+  if (token.length <= 6) return "***";
+  return `${token.slice(0, 6)}…(${token.length} chars)`;
+}
+
 /** 401 応答を投げる（emdash はカスタム status のため throw Response を用いる）。 */
 function unauthorized(): never {
   throw new Response(JSON.stringify({ error: "invalid or missing token" }), {
@@ -30,10 +36,12 @@ export async function handleWebhook(
 ): Promise<unknown> {
   const payload = (routeCtx.input ?? {}) as NotionWebhookPayload;
 
-  // 購読作成時のハンドシェイク: verification_token をログに出し（Workers ログから手動でコピーして
-  // Notion 側に貼り戻す運用）、そのままエコー返しする。保持しておく必要はない一度きりの値。
+  // 購読作成時のハンドシェイク: verification_token をエコー返しする。保持不要な一度きりの値だが、
+  // 恒久ログに丸ごと残さないよう、ログには先頭数文字だけのマスク値を出す（フル値はレスポンスで返る）。
   if (typeof payload.verification_token === "string") {
-    ctx.log.info(`notion webhook verification handshake received: ${payload.verification_token}`);
+    ctx.log.info(
+      `notion webhook verification handshake received: ${maskToken(payload.verification_token)}`,
+    );
     return { verification_token: payload.verification_token };
   }
 

@@ -31,6 +31,7 @@ export interface TestContextOptions {
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
   onCreate?: (collection: string, data: Record<string, unknown>) => { id: string };
   onUpdate?: (collection: string, id: string, data: Record<string, unknown>) => { id: string };
+  onDelete?: (collection: string, id: string) => void;
   onUpload?: (
     filename: string,
     contentType: string,
@@ -44,6 +45,7 @@ export interface TestContext {
   syncStore: Map<string, unknown>;
   created: Array<{ collection: string; data: Record<string, unknown> }>;
   updated: Array<{ collection: string; id: string; data: Record<string, unknown> }>;
+  deleted: Array<{ collection: string; id: string }>;
   logs: Array<{ level: string; message: string }>;
 }
 
@@ -53,6 +55,7 @@ export function createTestContext(options: TestContextOptions = {}): TestContext
   const sync = mapStorage();
   const created: TestContext["created"] = [];
   const updated: TestContext["updated"] = [];
+  const deleted: TestContext["deleted"] = [];
   const logs: TestContext["logs"] = [];
   let idSeq = 0;
 
@@ -107,7 +110,11 @@ export function createTestContext(options: TestContextOptions = {}): TestContext
           publishedAt: null,
         };
       },
-      delete: async () => true,
+      delete: async (collection: string, id: string) => {
+        options.onDelete?.(collection, id);
+        deleted.push({ collection, id });
+        return true;
+      },
     },
     media: {
       get: async () => null,
@@ -123,7 +130,7 @@ export function createTestContext(options: TestContextOptions = {}): TestContext
     },
   } as unknown as PluginContext;
 
-  return { ctx, kv, syncStore: sync.store, created, updated, logs };
+  return { ctx, kv, syncStore: sync.store, created, updated, deleted, logs };
 }
 
 /** Notion REST を模した http.fetch を作る。 */

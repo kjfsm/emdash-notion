@@ -37,6 +37,10 @@
     "./sandbox": {
       "types": "./dist/sandbox-entry.d.ts",
       "import": "./dist/sandbox-entry.js"
+    },
+    "./portable-text": {
+      "types": "./dist/portable-text/types.d.ts",
+      "import": "./dist/portable-text/types.js"
     }
   },
   "publishConfig": {
@@ -44,6 +48,8 @@
     "provenance": true
   },
   "scripts": {
+    "gen-version": "node ../../scripts/gen-version.mjs",
+    "prebuild": "pnpm gen-version",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -57,7 +63,7 @@
   },
   "devDependencies": {
     "@emdash-cms/blocks": ">=0.28.1",
-    "@emdash-notion/types": "workspace:*",
+    "@notionhq/client": "^2.2.15",
     "emdash": ">=0.28.1"
   },
   "peerDependencies": {

@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import pkg from "../package.json" with { type: "json" };
 import { createPlugin, notionBlocksPlugin } from "../src/index.js";
 
 describe("notionBlocksPlugin() descriptor", () => {
   it("returns a valid PluginDescriptor", () => {
     const descriptor = notionBlocksPlugin();
     expect(descriptor.id).toBe("notion-blocks");
-    expect(descriptor.version).toBe("0.1.0");
+    expect(descriptor.version).toBe(pkg.version);
     expect(descriptor.format).toBe("native");
     expect(descriptor.entrypoint).toBe("@emdash-notion/blocks");
   });
@@ -26,7 +27,11 @@ describe("createPlugin() native definition", () => {
   it("returns a definition with id and version", () => {
     const definition = createPlugin();
     expect(definition.id).toBe("notion-blocks");
-    expect(definition.version).toBe("0.1.0");
+    expect(definition.version).toBe(pkg.version);
+  });
+
+  it("descriptor の version は package.json と一致する（gen-version による単一情報源）", () => {
+    expect(notionBlocksPlugin().version).toBe(pkg.version);
   });
 
   it("returns a fully normalized ResolvedPlugin shape", () => {

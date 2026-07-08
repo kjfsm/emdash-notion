@@ -16,11 +16,15 @@ describe("extractPageId", () => {
 });
 
 describe("handleWebhook", () => {
-  it("verification_token ハンドシェイクをエコー返しし、ログに出力する", async () => {
+  it("verification_token ハンドシェイクをエコー返しし、ログにはマスク値のみ出す", async () => {
     const t = createTestContext();
-    const routeCtx = withRoute(t.ctx, { verification_token: "vt-123" }, "https://x/webhook");
+    const token = "vt-1234567890";
+    const routeCtx = withRoute(t.ctx, { verification_token: token }, "https://x/webhook");
     const res = (await handleWebhook(...routeCtx)) as { verification_token: string };
-    expect(res.verification_token).toBe("vt-123");
+    // レスポンスにはフル値を返す（Notion 側の照合に必要）。
+    expect(res.verification_token).toBe(token);
+    // ログにはフル値を残さない（先頭数文字のみのマスク）。
+    expect(t.logs.some((l) => l.message.includes(token))).toBe(false);
     expect(t.logs.some((l) => l.message.includes("vt-123"))).toBe(true);
   });
 
