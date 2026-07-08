@@ -52,13 +52,13 @@
     "release:local": "npm publish --no-provenance"
   },
   "devDependencies": {
-    "@emdash-cms/blocks": ">=0.27.0",
+    "@emdash-cms/blocks": ">=0.28.1",
     "@emdash-notion/types": "workspace:*",
-    "emdash": ">=0.27.0"
+    "emdash": ">=0.28.1"
   },
   "peerDependencies": {
-    "@emdash-cms/blocks": ">=0.27.0",
-    "emdash": ">=0.27.0"
+    "@emdash-cms/blocks": ">=0.28.1",
+    "emdash": ">=0.28.1"
   },
   "engines": {
     "node": ">=20"
