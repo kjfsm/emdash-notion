@@ -43,7 +43,12 @@ const HEADING_STYLE: Record<string, string> = {
 
 interface NotionCalloutPayload {
   rich_text?: NotionRichText[];
-  icon?: { type: "emoji" | "external" | "file"; emoji?: string; external?: { url: string }; file?: { url: string } };
+  icon?: {
+    type: "emoji" | "external" | "file";
+    emoji?: string;
+    external?: { url: string };
+    file?: { url: string };
+  };
   color?: string;
 }
 
@@ -148,7 +153,13 @@ async function convertBlock(
     }
     case "toggle": {
       out.push(
-        await toggleBlock(data?.rich_text ?? [], block.children ?? [], keygen, resolveImage, unsupported),
+        await toggleBlock(
+          data?.rich_text ?? [],
+          block.children ?? [],
+          keygen,
+          resolveImage,
+          unsupported,
+        ),
       );
       return;
     }
@@ -209,7 +220,8 @@ function listBlock(
 function calloutIcon(icon: NotionCalloutPayload["icon"]): NotionCalloutIcon | undefined {
   if (!icon) return undefined;
   if (icon.type === "emoji" && icon.emoji) return { type: "emoji", emoji: icon.emoji };
-  if (icon.type === "external" && icon.external?.url) return { type: "external", url: icon.external.url };
+  if (icon.type === "external" && icon.external?.url)
+    return { type: "external", url: icon.external.url };
   if (icon.type === "file" && icon.file?.url) return { type: "file", url: icon.file.url };
   return undefined;
 }
