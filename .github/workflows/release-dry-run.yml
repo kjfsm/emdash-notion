@@ -35,5 +35,5 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       # dry-run publish 前に dist を用意する
       - run: pnpm build
-      # バージョン衝突・provenance OIDC・認証を検知
-      - run: pnpm publish --dry-run --no-git-checks
+      # バージョン衝突・provenance OIDC・認証を検知（-r で全公開パッケージ対象）
+      - run: pnpm -r publish --dry-run --no-git-checks

@@ -1,6 +1,6 @@
 name: Changeset Check
 
-# src/** に変更がある PR には changeset を必須化する。
+# packages/** に変更がある PR には changeset を必須化する（shared/** は非公開のため対象外）。
 # 変更が無い、または `skip-changeset` ラベルが付いた PR はスキップ。
 
 on:
@@ -54,21 +54,21 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - if: steps.label.outputs.skip == 'false'
-        name: src/** の変更有無を判定
+        name: packages/** の変更有無を判定
         id: diff
         run: |
-          # PR の base..head 差分に src/ 配下の変更があるか確認。
-          # 無ければ changeset は不要 (docs / CI 専用の PR)。
+          # PR の base..head 差分に packages/ 配下（公開パッケージ）の変更があるか確認。
+          # 無ければ changeset は不要 (docs / CI / shared/ 専用の PR)。
           BASE=${{ github.event.pull_request.base.sha }}
           HEAD=${{ github.event.pull_request.head.sha }}
-          if git diff --name-only "$BASE" "$HEAD" | grep -q '^src/'; then
+          if git diff --name-only "$BASE" "$HEAD" | grep -q '^packages/'; then
             echo "needs=true" >> "$GITHUB_OUTPUT"
           else
             echo "needs=false" >> "$GITHUB_OUTPUT"
           fi
 
       - if: steps.label.outputs.skip == 'false' && steps.diff.outputs.needs == 'false'
-        run: echo "src/** に変更が無いため changeset は不要です"
+        run: echo "packages/** に変更が無いため changeset は不要です"
 
       - if: steps.label.outputs.skip == 'false' && steps.diff.outputs.needs == 'true'
         name: changeset の存在確認
