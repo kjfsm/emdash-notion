@@ -22,14 +22,21 @@ export interface Messages {
   pageIntro: string;
   languageLabel: string;
 
+  connectionHeader: string;
+
   notionTokenLabel: string;
   notionTokenSetPlaceholder: string;
   notionTokenNewPlaceholder: string;
+  saveConnection: string;
+
+  webhookHeader: string;
+  webhookExplain: string;
   webhookTokenLabel: string;
   webhookTokenSetPlaceholder: string;
   webhookTokenNewPlaceholder: string;
   webhookTokenHelp: string;
-  saveConnection: string;
+  saveWebhook: string;
+  webhookSaved: string;
 
   generateTokenButton: string;
   generateTokenHelp: string;
@@ -63,7 +70,9 @@ export interface Messages {
 
   mappingsHeader: string;
   mappingsHelp: string;
-  mappingLabel: (index: number, collection: string) => string;
+  mappingSummary: (collection: string, databaseName: string) => string;
+  mappingCollectionUnset: string;
+  mappingDatabaseUnset: string;
   addNewMapping: string;
 
   manualSyncSection: string;
@@ -91,18 +100,27 @@ export interface Messages {
 
 const en: Messages = {
   pageTitle: "notion-sync — Notion sync settings",
-  pageIntro: "Follow the steps: ① Save tokens → ② Add/edit mappings → ③ Try a manual fetch.",
+  pageIntro:
+    "Follow the steps: ① Save the Notion token → ② (optional) set up the webhook for automatic sync → ③ fetch the Notion structure → ④ try a manual fetch → ⑤ add mappings.",
   languageLabel: "Language",
+
+  connectionHeader: "Connection",
 
   notionTokenLabel: "Notion integration token",
   notionTokenSetPlaceholder: "Saved (leave blank to keep unchanged)",
   notionTokenNewPlaceholder: "secret_...",
+  saveConnection: "Save token",
+
+  webhookHeader: "Webhook (optional — automatic sync)",
+  webhookExplain:
+    "The webhook is optional. Set a token here and register the URL below in Notion to sync automatically whenever pages change. If you leave it unset, use the “Manual fetch” button instead to sync on demand.",
   webhookTokenLabel: "Webhook URL token",
   webhookTokenSetPlaceholder: "Saved (leave blank to keep unchanged)",
   webhookTokenNewPlaceholder: "Any shared secret",
   webhookTokenHelp:
     "This is a shared secret embedded in the webhook URL's `?token=` query — unrelated to the `verification_token` Notion sends once when you create the subscription.",
-  saveConnection: "Save tokens",
+  saveWebhook: "Save webhook token",
+  webhookSaved: "Webhook token saved",
 
   generateTokenButton: "Generate EmDash token",
   generateTokenHelp:
@@ -141,7 +159,9 @@ const en: Messages = {
   mappingsHeader: "Collection ⇔ Notion database mappings",
   mappingsHelp:
     "You can find the emdash collection slug under “Content types” in the admin. Title/body/author/slug field slugs can be picked from candidates once the collection already has content.",
-  mappingLabel: (index, collection) => `Mapping ${index + 1}: ${collection || "(unset)"}`,
+  mappingSummary: (collection, databaseName) => `${collection} ⇔ ${databaseName}`,
+  mappingCollectionUnset: "(collection unset)",
+  mappingDatabaseUnset: "(database unset)",
   addNewMapping: "Add a new mapping",
 
   manualSyncSection:
@@ -173,18 +193,27 @@ const en: Messages = {
 
 const ja: Messages = {
   pageTitle: "notion-sync — Notion 同期設定",
-  pageIntro: "① トークンを保存 → ② 対応を追加/編集 → ③ 手動取得で試す、の順に進めてください。",
+  pageIntro:
+    "① Notion トークンを保存 → ②（任意）Webhook を設定して自動同期 → ③ Notion の構造を取得 → ④ 手動取得で試す → ⑤ マッピングを追加、の順に進めてください。",
   languageLabel: "言語 / Language",
+
+  connectionHeader: "接続",
 
   notionTokenLabel: "Notion インテグレーショントークン",
   notionTokenSetPlaceholder: "設定済み（空欄のままなら変更しない）",
   notionTokenNewPlaceholder: "secret_...",
+  saveConnection: "トークンを保存",
+
+  webhookHeader: "Webhook（任意・自動同期）",
+  webhookExplain:
+    "Webhook はオプションです。ここでトークンを設定し、下の URL を Notion 側に登録すると、ページが変更されるたびに自動で同期されます。設定しない場合は、下の「手動取得」ボタンで必要なときに同期してください。",
   webhookTokenLabel: "Webhook URL トークン",
   webhookTokenSetPlaceholder: "設定済み（空欄のままなら変更しない）",
   webhookTokenNewPlaceholder: "任意の共有シークレット",
   webhookTokenHelp:
     "これは Webhook URL の `?token=` に埋め込む共有シークレットです。Notion が購読作成時に一度だけ送ってくる `verification_token` とは別物です。",
-  saveConnection: "トークンを保存",
+  saveWebhook: "Webhook トークンを保存",
+  webhookSaved: "Webhook トークンを保存しました",
 
   generateTokenButton: "EmDash token を生成",
   generateTokenHelp:
@@ -224,7 +253,9 @@ const ja: Messages = {
   mappingsHeader: "コレクション ⇔ Notion データベースの対応",
   mappingsHelp:
     "emdash コレクション Slug は管理画面の「コンテンツタイプ」で確認できます。タイトル/本文/著者/slug のフィールド Slug は、既にコンテンツがあるコレクションなら候補から選べます。",
-  mappingLabel: (index, collection) => `対応 ${index + 1}: ${collection || "(未設定)"}`,
+  mappingSummary: (collection, databaseName) => `${collection} ⇔ ${databaseName}`,
+  mappingCollectionUnset: "(コレクション未設定)",
+  mappingDatabaseUnset: "(データベース未設定)",
   addNewMapping: "新しい対応を追加",
 
   manualSyncSection:
