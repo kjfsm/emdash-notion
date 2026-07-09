@@ -3,6 +3,9 @@ import type { PluginDescriptor } from "emdash";
 
 import { VERSION } from "./version.js";
 
+/** descriptor（`notionBlocksPlugin`）と definition（`createPlugin`）で共有するプラグイン id。 */
+const PLUGIN_ID = "notion-blocks";
+
 /**
  * プラグイン記述子。`notion-sync` が生成する notionCallout/notionTodo/notionToggle を
  * Notion 風の見た目で描画する。`componentsEntry` が指す `./astro` から
@@ -10,7 +13,7 @@ import { VERSION } from "./version.js";
  */
 export function notionBlocksPlugin(): PluginDescriptor {
   return {
-    id: "notion-blocks",
+    id: PLUGIN_ID,
     version: VERSION,
     format: "native",
     entrypoint: "@emdash-notion/blocks",
@@ -25,7 +28,7 @@ export function notionBlocksPlugin(): PluginDescriptor {
  */
 export function createPlugin() {
   return definePlugin({
-    id: "notion-blocks",
+    id: PLUGIN_ID,
     version: VERSION,
     hooks: {},
     admin: {

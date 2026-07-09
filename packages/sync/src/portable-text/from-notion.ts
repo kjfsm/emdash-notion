@@ -413,7 +413,7 @@ async function convertImage(
         caption?: NotionRichText[];
       }
     | undefined;
-  const url = image?.external?.url ?? image?.file?.url;
+  const url = mediaUrl(image);
   if (!url) return null;
   const alt = plainText(image?.caption);
 
@@ -584,6 +584,13 @@ interface NotionMediaPayload {
   caption?: NotionRichText[];
 }
 
+/** Notion のメディアペイロード（external/file の 2 形態）から実 URL を取り出す。 */
+function mediaUrl(
+  payload: { external?: { url: string }; file?: { url: string } } | undefined,
+): string | undefined {
+  return payload?.external?.url ?? payload?.file?.url;
+}
+
 /**
  * Notion の video/audio を emdash コア標準の embed 形状（`provider` 指定でセルフホスト扱い）へ変換する。
  * サイズが大きく Worker の実行時間・メモリを圧迫しうるため resolver は通さず、元 URL
@@ -595,7 +602,7 @@ function convertMediaEmbed(
   keygen: () => string,
 ): PortableTextEmbedBlock | null {
   const payload = block[kind] as NotionMediaPayload | undefined;
-  const url = payload?.external?.url ?? payload?.file?.url;
+  const url = mediaUrl(payload);
   if (!url) return null;
   const caption = plainText(payload?.caption);
   return { _type: "embed", _key: keygen(), url, provider: kind, caption: caption || undefined };
@@ -612,7 +619,7 @@ async function convertFile(
 ): Promise<PortableTextFileBlock | null> {
   const type = block.type as "file" | "pdf";
   const payload = block[type] as NotionMediaPayload | undefined;
-  const url = payload?.external?.url ?? payload?.file?.url;
+  const url = mediaUrl(payload);
   if (!url) return null;
 
   const shouldPersist = payload?.type === "file" && resolveFile;
