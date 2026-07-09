@@ -5,13 +5,18 @@ import { notionBlocksToPortableText } from "../src/portable-text/from-notion.js"
 import type {
   NotionBookmarkBlock,
   NotionCalloutBlock,
+  NotionChildDatabaseBlock,
+  NotionChildPageBlock,
   NotionEquationBlock,
+  NotionLinkToPageBlock,
+  NotionTableOfContentsBlock,
   NotionTodoBlock,
   NotionToggleBlock,
   PortableTextBlock,
   PortableTextColumnsBlock,
   PortableTextEmbedBlock,
   PortableTextFileBlock,
+  PortableTextHtmlBlock,
   PortableTextImage,
   PortableTextTableBlock,
 } from "../src/portable-text/types.js";
@@ -219,12 +224,115 @@ describe("notionBlocksToPortableText", () => {
     expect(img.asset.url).toBe("https://images.unsplash.com/photo-1.jpg");
   });
 
-  it("未対応ブロックは unsupported に記録する", async () => {
+  it("未対応ブロックは unsupported に記録し、HTML コメントの htmlBlock として可視化する", async () => {
     const { blocks, unsupported } = await notionBlocksToPortableText([
-      block("u", "table_of_contents", {}),
+      block("u", "some_future_block", {}),
     ]);
-    expect(blocks).toHaveLength(0);
-    expect(unsupported).toContain("table_of_contents");
+    expect(blocks).toHaveLength(1);
+    const html = blocks[0] as PortableTextHtmlBlock;
+    expect(html._type).toBe("htmlBlock");
+    expect(html.html).toBe("<!-- notion:unsupported some_future_block -->");
+    expect(unsupported).toContain("some_future_block");
+  });
+
+  it("未対応ブロックでも rich_text を持てば段落へフォールバックする（htmlBlock は出さない）", async () => {
+    const { blocks, unsupported } = await notionBlocksToPortableText([
+      block("u", "some_future_block", { rich_text: [rt("本文")] }),
+    ]);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]!._type).toBe("block");
+    expect((blocks[0] as PortableTextBlock).children[0]!.text).toBe("本文");
+    expect(unsupported).toContain("some_future_block");
+  });
+
+  it("table_of_contents を notionTableOfContents に変換する（色付き）", async () => {
+    const { blocks, unsupported } = await notionBlocksToPortableText([
+      block("toc", "table_of_contents", { color: "blue" }),
+    ]);
+    const toc = blocks[0] as NotionTableOfContentsBlock;
+    expect(toc._type).toBe("notionTableOfContents");
+    expect(toc.color).toBe("blue");
+    expect(unsupported).not.toContain("table_of_contents");
+  });
+
+  it("table_of_contents の色が default のときは color を省略する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("toc", "table_of_contents", { color: "default" }),
+    ]);
+    expect((blocks[0] as NotionTableOfContentsBlock).color).toBeUndefined();
+  });
+
+  it("child_page を notionChildPage に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("cp", "child_page", { title: "サブページ" }),
+    ]);
+    const childPage = blocks[0] as NotionChildPageBlock;
+    expect(childPage._type).toBe("notionChildPage");
+    expect(childPage.pageId).toBe("cp");
+    expect(childPage.title).toBe("サブページ");
+  });
+
+  it("child_database を notionChildDatabase に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("cd", "child_database", { title: "DB" }),
+    ]);
+    const childDatabase = blocks[0] as NotionChildDatabaseBlock;
+    expect(childDatabase._type).toBe("notionChildDatabase");
+    expect(childDatabase.databaseId).toBe("cd");
+    expect(childDatabase.title).toBe("DB");
+  });
+
+  it("link_to_page (page_id) を notionLinkToPage(kind: page) に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("l", "link_to_page", { type: "page_id", page_id: "target-page" }),
+    ]);
+    const linkToPage = blocks[0] as NotionLinkToPageBlock;
+    expect(linkToPage._type).toBe("notionLinkToPage");
+    expect(linkToPage.kind).toBe("page");
+    expect(linkToPage.targetId).toBe("target-page");
+    expect(linkToPage.title).toBeUndefined();
+  });
+
+  it("link_to_page (database_id) を notionLinkToPage(kind: database) に変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("l", "link_to_page", { type: "database_id", database_id: "target-db" }),
+    ]);
+    const linkToPage = blocks[0] as NotionLinkToPageBlock;
+    expect(linkToPage.kind).toBe("database");
+    expect(linkToPage.targetId).toBe("target-db");
+  });
+
+  it("synced_block はノードを出さず子ブロックのみ変換する", async () => {
+    const { blocks, unsupported } = await notionBlocksToPortableText([
+      block("s", "synced_block", { synced_from: null }, [
+        block("p", "paragraph", { rich_text: [rt("同期元の中身")] }),
+      ]),
+    ]);
+    expect(blocks).toHaveLength(1);
+    expect((blocks[0] as PortableTextBlock).children[0]!.text).toBe("同期元の中身");
+    expect(unsupported).not.toContain("synced_block");
+  });
+
+  it("template を rich_text を escape した htmlBlock に変換しつつ子も変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("tpl", "template", { rich_text: [rt("<b>note</b>")] }, [
+        block("p", "paragraph", { rich_text: [rt("子ブロック")] }),
+      ]),
+    ]);
+    expect(blocks).toHaveLength(2);
+    const html = blocks[0] as PortableTextHtmlBlock;
+    expect(html._type).toBe("htmlBlock");
+    expect(html.html).toBe('<div class="notion-template">&lt;b&gt;note&lt;/b&gt;</div>');
+    expect((blocks[1] as PortableTextBlock).children[0]!.text).toBe("子ブロック");
+  });
+
+  it("tab はマーカーの htmlBlock を出しつつ子も変換する", async () => {
+    const { blocks } = await notionBlocksToPortableText([
+      block("t", "tab", {}, [block("p", "paragraph", { rich_text: [rt("タブの中身")] })]),
+    ]);
+    expect(blocks).toHaveLength(2);
+    expect((blocks[0] as PortableTextHtmlBlock).html).toBe('<div class="notion-tab"></div>');
+    expect((blocks[1] as PortableTextBlock).children[0]!.text).toBe("タブの中身");
   });
 
   it("table を emdash 標準の table 形状に変換する（列ヘッダー・行ヘッダーともに）", async () => {

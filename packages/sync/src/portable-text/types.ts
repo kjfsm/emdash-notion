@@ -174,6 +174,54 @@ export interface NotionBookmarkBlock {
   };
 }
 
+/** Notion の table_of_contents ブロック。見出し一覧の実生成はサイト側 CSS/JS に委ねる。 */
+export interface NotionTableOfContentsBlock {
+  _type: "notionTableOfContents";
+  _key: string;
+  /** Notion の `color`（例 "gray_background"）。省略時は既定色。 */
+  color?: string;
+}
+
+/** Notion の child_page ブロック（サブページへのリンクカード）。 */
+export interface NotionChildPageBlock {
+  _type: "notionChildPage";
+  _key: string;
+  pageId: string;
+  title: string;
+}
+
+/** Notion の child_database ブロック（インラインデータベースへのリンクカード）。 */
+export interface NotionChildDatabaseBlock {
+  _type: "notionChildDatabase";
+  _key: string;
+  databaseId: string;
+  title: string;
+}
+
+/**
+ * Notion の link_to_page ブロック。Notion API はリンク先のタイトルを返さないため、
+ * タイトル未解決時は `title` を省略し `notion-blocks` 側で targetId を表示する。
+ */
+export interface NotionLinkToPageBlock {
+  _type: "notionLinkToPage";
+  _key: string;
+  kind: "page" | "database";
+  targetId: string;
+  title?: string;
+}
+
+/**
+ * emdash コア標準の htmlBlock。サニタイズ済みで自動描画されるが、既定の許可リストに
+ * `class`/`id`/`style` が含まれないため見た目の制御はできない。native カスタムブロック化
+ * するほどの価値がないレアケース（synced_block の派生・template・tab・真に未知のブロック）
+ * のフォールバック専用。
+ */
+export interface PortableTextHtmlBlock {
+  _type: "htmlBlock";
+  _key: string;
+  html: string;
+}
+
 /** その他ブロック（code など）は緩く許容する。 */
 export interface PortableTextArbitrary {
   _type: string;
@@ -193,4 +241,9 @@ export type PortableTextNode =
   | PortableTextFileBlock
   | NotionEquationBlock
   | NotionBookmarkBlock
+  | NotionTableOfContentsBlock
+  | NotionChildPageBlock
+  | NotionChildDatabaseBlock
+  | NotionLinkToPageBlock
+  | PortableTextHtmlBlock
   | PortableTextArbitrary;

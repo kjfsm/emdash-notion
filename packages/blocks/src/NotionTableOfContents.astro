@@ -1,0 +1,34 @@
+---
+import { notionBlockColorVars } from "@emdash-notion/blocks/notion-color";
+
+export interface Props {
+  node: {
+    _key: string;
+    color?: string;
+  };
+}
+
+const { node } = Astro.props;
+const { accent } = notionBlockColorVars(node.color);
+---
+
+<nav
+  class="notion-toc"
+  aria-label="table of contents"
+  style={`--notion-toc-accent: ${accent};`}
+>
+  <span class="notion-toc__label">Table of contents</span>
+</nav>
+
+<style>
+  .notion-toc {
+    border-left: 3px solid var(--notion-toc-accent);
+    padding: 0.5rem 0.75rem;
+    margin: 1rem 0;
+  }
+
+  .notion-toc__label {
+    font-size: 0.875rem;
+    color: #666;
+  }
+</style>

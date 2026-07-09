@@ -52,6 +52,10 @@ describe("createPlugin() native definition", () => {
       "notionToggle",
       "notionEquation",
       "notionBookmark",
+      "notionTableOfContents",
+      "notionChildPage",
+      "notionChildDatabase",
+      "notionLinkToPage",
     ]);
   });
 

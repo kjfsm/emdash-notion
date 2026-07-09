@@ -1,0 +1,33 @@
+---
+export interface Props {
+  node: {
+    _key: string;
+    pageId: string;
+    title: string;
+  };
+}
+
+const { node } = Astro.props;
+---
+
+<!-- Notion API はリンク先の emdash 上の URL を返さないため、リンクにはせずカード表示のみ行う。 -->
+<div class="notion-child-page" data-notion-page-id={node.pageId}>
+  <span class="notion-child-page__icon" aria-hidden="true">📄</span>
+  <span class="notion-child-page__title">{node.title}</span>
+</div>
+
+<style>
+  .notion-child-page {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e3e2e0;
+    border-radius: 6px;
+    margin: 0.5rem 0;
+  }
+
+  .notion-child-page__title {
+    font-weight: 500;
+  }
+</style>
