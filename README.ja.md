@@ -6,6 +6,7 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
 - **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync)、plugin id: `notion-sync`（**sandboxed** format）。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
 - **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks)、plugin id: `notion-blocks`（**native** format）。Notion 固有ブロック（callout・to-do・toggle・equation・bookmark・divider）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
+- **[`templates/sample-emdash-site`](./templates/sample-emdash-site)** — `notion-sync`/`notion-blocks` を手元で一通り動かして確認するためのローカル専用 EmDash サイト（`private`、npm には公開しない）。両プラグインを `workspace:*` で参照する workspace メンバーのため、ローカルの変更が pack/publish なしですぐ反映される。
 
 > 管理 UI（`notion-sync`）は **英語（既定）** と **日本語** に対応し、設定ページから切り替えられます。
 
@@ -116,7 +117,7 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
 ## 開発
 
-pnpm workspace の monorepo（`packages/*`）。
+pnpm workspace の monorepo（`packages/*` と `templates/*`）。共通ツールのバージョン（`emdash`・`oxlint`・`oxfmt`・`eslint`・`typescript`・`vitest` 等）は `pnpm-workspace.yaml` の `catalog:` に一元管理する — バージョンを上げる際はここを編集し、各パッケージ側では編集しない。
 
 ```sh
 pnpm install
@@ -130,7 +131,9 @@ pnpm build       # パッケージごとに dist/ を出力（いずれも通常
 
 `packages/sync` のマニフェスト（`emdash-plugin.jsonc`）は `pnpm --filter @emdash-notion/sync validate`（[`emdash-plugin validate`](https://docs.emdashcms.com/plugins/creating-plugins/cli/) のラッパー）でオフライン検証できる。`build` スクリプトは `emdash-plugin build`（`dist/plugin.mjs`・`dist/manifest.json`・`dist/index.mjs` を生成）に続けて、`./portable-text` サブパスの型のみ別途 `tsc` でビルドする。
 
-**ローカル emdash サイトでの動作確認**: `pnpm link` は手軽に見えるが、link したパッケージがこの monorepo 自身の `node_modules`（サイト側とは別の pnpm ストア）から `emdash` を解決し続けてしまい、バージョンを揃えても `emdash` が物理的に二重インスタンスになる（プラグイン登録が壊れうる）。代わりに、各パッケージ（`packages/sync`・`packages/blocks`）で `pnpm build && pnpm pack` し、生成された `.tgz` をサイト側の `pnpm-workspace.yaml` の `overrides` に指定する（`package.json` の `pnpm` フィールドではない — 最近の pnpm はそこから overrides を読まなくなった）:
+**ローカルでの動作確認**: `templates/sample-emdash-site` は両プラグインを `workspace:*` で参照する workspace メンバーなので、プラグインをビルド（`pnpm build`）した後 `pnpm --filter sample-emdash-site dev` するだけでローカルの変更がすぐ反映される（pack/publish 不要）。`private` のため npm には公開されない。
+
+**この workspace の外にある EmDash サイトでの動作確認**: `pnpm link` は手軽に見えるが、link したパッケージがこの monorepo 自身の `node_modules`（サイト側とは別の pnpm ストア）から `emdash` を解決し続けてしまい、バージョンを揃えても `emdash` が物理的に二重インスタンスになる（プラグイン登録が壊れうる）。代わりに、各パッケージ（`packages/sync`・`packages/blocks`）で `pnpm build && pnpm pack` し、生成された `.tgz` をサイト側の `pnpm-workspace.yaml` の `overrides` に指定する（`package.json` の `pnpm` フィールドではない — 最近の pnpm はそこから overrides を読まなくなった）:
 
 ```yaml
 overrides:

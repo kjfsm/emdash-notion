@@ -3,18 +3,18 @@
   "workspaces": {
     ".": {
       "entry": ["scripts/gen-version.mjs"],
-      "project": ["scripts/**/*.mjs"]
+      "project": ["scripts/**/*.mjs"],
     },
     "packages/sync": {
       "entry": ["src/index.ts", "src/sandbox-entry.ts", "src/portable-text/types.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
     },
     "packages/blocks": {
       "entry": ["src/index.ts", "src/notion-color.ts", "src/safe-url.ts"],
-      "project": ["src/**/*.ts"]
-    }
+      "project": ["src/**/*.ts"],
+    },
   },
   // pnpm -r --if-present gen-version はワークスペーススクリプトの再帰呼び出しであり
   // バイナリ実行ではないが、knip がバイナリ呼び出しと誤認するため無視する。
-  "ignoreBinaries": ["gen-version"]
+  "ignoreBinaries": ["gen-version"],
 }

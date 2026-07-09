@@ -9,7 +9,11 @@ export interface Props {
     _key: string;
     children: unknown[];
     markDefs: unknown[];
-    icon?: { type: "emoji" | "external" | "file"; emoji?: string; url?: string };
+    icon?: {
+      type: "emoji" | "external" | "file";
+      emoji?: string;
+      url?: string;
+    };
     color?: string;
   };
 }
@@ -38,7 +42,11 @@ const textBlock = {
         {node.icon.emoji}
       </span>
     ) : iconSrc ? (
-      <img class="notion-callout__icon notion-callout__icon--image" src={iconSrc} alt="" />
+      <img
+        class="notion-callout__icon notion-callout__icon--image"
+        src={iconSrc}
+        alt=""
+      />
     ) : null
   }
   <div class="notion-callout__content">

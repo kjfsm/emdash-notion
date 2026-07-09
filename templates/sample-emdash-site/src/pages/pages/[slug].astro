@@ -1,0 +1,111 @@
+---
+import { getEmDashEntry, decodeSlug } from "emdash";
+import { PortableText } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
+
+const slug = decodeSlug(Astro.params.slug);
+
+if (!slug) {
+  return Astro.redirect("/404");
+}
+
+const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
+
+if (!page) {
+  return Astro.redirect("/404");
+}
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+---
+
+<Base title={page.data.title}>
+  <article class="page-article">
+    <header class="page-header">
+      <h1 class="page-title" {...page.edit.title}>{page.data.title}</h1>
+    </header>
+
+    <div class="page-content">
+      <PortableText value={page.data.content} />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .page-article {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--spacing-4xl) var(--spacing-lg);
+  }
+
+  .page-header {
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .page-title {
+    font-family: var(--font-heading);
+    font-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-4xl));
+    font-weight: var(--font-weight-display);
+    line-height: var(--leading-tight);
+  }
+
+  .page-content :global(p) {
+    margin-bottom: 1.5em;
+  }
+
+  .page-content :global(h2) {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-heading);
+    margin-top: 2em;
+    margin-bottom: 0.75em;
+  }
+
+  .page-content :global(h3) {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-heading);
+    margin-top: 1.75em;
+    margin-bottom: 0.5em;
+  }
+
+  .page-content :global(blockquote) {
+    margin: 1.5em 0;
+    padding-left: var(--spacing-lg);
+    border-left: 3px solid var(--color-border);
+    color: var(--color-muted);
+  }
+
+  .page-content :global(pre) {
+    margin: 1.5em 0;
+    padding: var(--spacing-md);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+  }
+
+  .page-content :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-surface);
+    padding: 0.15em 0.3em;
+    border-radius: var(--radius);
+  }
+
+  .page-content :global(pre code) {
+    background: none;
+    padding: 0;
+  }
+
+  .page-content :global(ul),
+  .page-content :global(ol) {
+    margin-bottom: 1.5em;
+    padding-left: var(--spacing-lg);
+  }
+
+  .page-content :global(li) {
+    margin-bottom: 0.5em;
+  }
+</style>

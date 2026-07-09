@@ -36,13 +36,20 @@ const ogImage = safeImageSrc(node.og?.image);
 const Tag = href ? "a" : "div";
 ---
 
-<Tag class="notion-bookmark" href={href} target={href ? "_blank" : undefined} rel={href ? "noopener noreferrer" : undefined}>
+<Tag
+  class="notion-bookmark"
+  href={href}
+  target={href ? "_blank" : undefined}
+  rel={href ? "noopener noreferrer" : undefined}
+>
   {
     node.og ? (
       <>
         <div class="notion-bookmark__text">
           <p class="notion-bookmark__title">{node.og.title ?? node.url}</p>
-          {node.og.description && <p class="notion-bookmark__desc">{node.og.description}</p>}
+          {node.og.description && (
+            <p class="notion-bookmark__desc">{node.og.description}</p>
+          )}
           <p class="notion-bookmark__url">{node.og.siteName ?? node.url}</p>
         </div>
         {ogImage && <img class="notion-bookmark__image" src={ogImage} alt="" />}
@@ -52,11 +59,13 @@ const Tag = href ? "a" : "div";
     )
   }
 </Tag>
-{captionBlock && (
-  <div class="notion-bookmark__caption">
-    <PortableText value={[captionBlock]} />
-  </div>
-)}
+{
+  captionBlock && (
+    <div class="notion-bookmark__caption">
+      <PortableText value={[captionBlock]} />
+    </div>
+  )
+}
 
 <style>
   .notion-bookmark {

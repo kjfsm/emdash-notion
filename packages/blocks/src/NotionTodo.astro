@@ -23,8 +23,19 @@ const indent = ((node.level ?? 1) - 1) * 1.5;
 ---
 
 <div class="notion-todo" style={`--notion-todo-indent: ${indent}rem;`}>
-  <input type="checkbox" checked={node.checked} disabled aria-readonly="true" tabindex={-1} />
-  <div class:list={["notion-todo__text", { "notion-todo__text--checked": node.checked }]}>
+  <input
+    type="checkbox"
+    checked={node.checked}
+    disabled
+    aria-readonly="true"
+    tabindex={-1}
+  />
+  <div
+    class:list={[
+      "notion-todo__text",
+      { "notion-todo__text--checked": node.checked },
+    ]}
+  >
     <PortableText value={[textBlock]} />
   </div>
 </div>

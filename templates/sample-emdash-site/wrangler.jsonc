@@ -1,0 +1,49 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "notion-sync-test-template",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2026-02-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1,
+    },
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "notion-sync-test-template-db",
+      // WHY: この template は notion-sync のローカル動作確認専用。実サイト(sample-emdash-site)とは
+      // 別の D1 データベースを使うこと。deploy 前に `wrangler d1 create notion-sync-test-template-db`
+      // で新規作成し、発行された database_id に差し替える（このプレースホルダのままでは deploy できない）。
+      "database_id": "REPLACE_WITH_NEW_D1_DATABASE_ID",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "notion-sync-test-template-media",
+    },
+  ],
+  // Worker Loader for plugin sandboxing — Workers Paid プラン専用機能のため Free プランでは有効化しない
+  // (https://developers.cloudflare.com/dynamic-workers/pricing/)。有効化する場合はコメントを外す。
+  // "worker_loaders": [
+  // 	{
+  // 		"binding": "LOADER",
+  // 	},
+  // ],
+  // // Drives scheduled publishing, plugin cron, and maintenance (see src/worker.ts)
+  // "triggers": {
+  // 	"crons": ["* * * * *"],
+  // },
+}

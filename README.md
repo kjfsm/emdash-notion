@@ -6,6 +6,7 @@ A pnpm monorepo that receives Notion webhooks, converts pages to [Portable Text]
 
 - **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync), plugin id: `notion-sync` (**sandboxed** format). Fetches from Notion, converts to Portable Text, and writes to EmDash content.
 - **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks), plugin id: `notion-blocks` (**native** format). Renders Notion-specific blocks (callout, to-do, toggle, equation, bookmark, divider) with Notion-like styling via `componentsEntry`. Optional — without it, those blocks still contain their text but render with no special styling.
+- **[`templates/sample-emdash-site`](./templates/sample-emdash-site)** — a local-only EmDash site (`private`, never published) for manually exercising `notion-sync`/`notion-blocks` end to end. It's a pnpm workspace member depending on both plugins via `workspace:*`, so local plugin changes are picked up immediately without packing/publishing.
 
 > The admin UI (`notion-sync`) is available in **English (default)** and **Japanese**, switchable from the settings page.
 
@@ -116,7 +117,7 @@ Only callout and to-do expose theme variables. `notionBookmark`, `notionEquation
 
 ## Development
 
-This is a pnpm workspace monorepo (`packages/*`).
+This is a pnpm workspace monorepo (`packages/*` and `templates/*`). Shared tool versions (`emdash`, `oxlint`, `oxfmt`, `eslint`, `typescript`, `vitest`, etc.) are centralized in `pnpm-workspace.yaml`'s `catalog:` — bump them there, not per-package.
 
 ```sh
 pnpm install
@@ -130,7 +131,9 @@ Run a script for a single package with `pnpm --filter @emdash-notion/sync <scrip
 
 `packages/sync`'s manifest (`emdash-plugin.jsonc`) can be checked offline with `pnpm --filter @emdash-notion/sync validate` (wraps [`emdash-plugin validate`](https://docs.emdashcms.com/plugins/creating-plugins/cli/)). Its `build` script runs `emdash-plugin build` (emits `dist/plugin.mjs`, `dist/manifest.json`, `dist/index.mjs`) followed by a separate `tsc` pass for the `./portable-text` subpath types.
 
-**Verifying against a local EmDash site:** `pnpm link` is tempting but causes a duplicate `emdash` module instance — the linked package keeps resolving `emdash` from this monorepo's own `node_modules` (a different pnpm store than the site's), even after aligning version numbers, which can break plugin registration. Instead, `pnpm build && pnpm pack` each package (from `packages/sync` and `packages/blocks`) and add the resulting `.tgz` via an `overrides` entry in the site's `pnpm-workspace.yaml` (not the `package.json` `pnpm` field — recent pnpm versions no longer read overrides from there):
+**Verifying locally:** `templates/sample-emdash-site` is a workspace member that depends on both plugins via `workspace:*` — build the plugins (`pnpm build`) and `pnpm --filter sample-emdash-site dev` picks up local changes immediately, no packing or publishing needed. It's `private` and never published.
+
+**Verifying against an external EmDash site** (not part of this workspace): `pnpm link` is tempting but causes a duplicate `emdash` module instance — the linked package keeps resolving `emdash` from this monorepo's own `node_modules` (a different pnpm store than the site's), even after aligning version numbers, which can break plugin registration. Instead, `pnpm build && pnpm pack` each package (from `packages/sync` and `packages/blocks`) and add the resulting `.tgz` via an `overrides` entry in the site's `pnpm-workspace.yaml` (not the `package.json` `pnpm` field — recent pnpm versions no longer read overrides from there):
 
 ```yaml
 overrides:
