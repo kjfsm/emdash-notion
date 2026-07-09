@@ -1,7 +1,7 @@
 {
   "name": "@emdash-notion/sync",
   "version": "0.2.0",
-  "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks — a standard-format EmDash plugin (Notion → EmDash)",
+  "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks — a sandboxed EmDash plugin (Notion → EmDash)",
   "keywords": [
     "astro",
     "cms",
@@ -28,15 +28,15 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "dist/index.js",
+  "main": "dist/index.mjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     },
     "./sandbox": {
-      "types": "./dist/sandbox-entry.d.ts",
-      "import": "./dist/sandbox-entry.js"
+      "types": "./dist/plugin.d.mts",
+      "import": "./dist/plugin.mjs"
     },
     "./portable-text": {
       "types": "./dist/portable-text/types.d.ts",
@@ -48,9 +48,7 @@
     "provenance": true
   },
   "scripts": {
-    "gen-version": "node ../../scripts/gen-version.mjs",
-    "prebuild": "pnpm gen-version",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "emdash-plugin build && tsc -p tsconfig.portable-text.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text",
@@ -59,15 +57,16 @@
     "publint": "publint --strict",
     "attw": "attw --pack . --profile esm-only",
     "size": "size-limit",
+    "validate": "emdash-plugin validate",
     "release:local": "npm publish --no-provenance"
   },
   "devDependencies": {
     "@emdash-cms/blocks": ">=0.28.1",
+    "@emdash-cms/plugin-cli": "^0.6.0",
     "@notionhq/client": "^2.2.15",
     "emdash": ">=0.28.1"
   },
   "peerDependencies": {
-    "@emdash-cms/blocks": ">=0.28.1",
     "emdash": ">=0.28.1"
   },
   "engines": {

@@ -29,7 +29,7 @@ export interface SyncRecord {
 }
 
 function collection(ctx: PluginContext): StorageCollection<SyncRecord> {
-  return ctx.storage.syncMap as StorageCollection<SyncRecord>;
+  return ctx.storage.sync_map as StorageCollection<SyncRecord>;
 }
 
 export function getMapping(ctx: PluginContext, notionId: string): Promise<SyncRecord | null> {
@@ -50,7 +50,7 @@ export function deleteMapping(ctx: PluginContext, notionId: string): Promise<boo
 }
 
 /**
- * 全 syncMap レコードをページングしながら列挙する。`syncAll` の照合パス
+ * 全 sync_map レコードをページングしながら列挙する。`syncAll` の照合パス
  * （Notion 側で削除・アーカイブされたが DB クエリには現れなくなったページの検知）が使う。
  */
 export async function* iterateMappings(

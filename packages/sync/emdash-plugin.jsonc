@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/@emdash-cms/plugin-cli/schemas/emdash-plugin.schema.json",
+
+  "slug": "notion-sync",
+  "publisher": "did:plc:eenyklkiibu2bondaj2spe67",
+
+  "license": "MIT",
+  "author": { "name": "kjfsm", "email": "kjfsm@users.noreply.github.com" },
+  "security": { "url": "https://github.com/kjfsm/emdash-notion/security/advisories/new" },
+
+  "name": "notion-sync",
+  "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks (Notion → EmDash, one-way).",
+  "keywords": ["notion", "sync", "webhooks", "portable-text"],
+  "repo": "https://github.com/kjfsm/emdash-notion",
+
+  // Trust contract — what runtime APIs the plugin asks for.
+  // Changing these between releases requires a version bump
+  // because installed users have consented to the old contract.
+  "capabilities": ["content:read", "content:write", "media:read", "media:write", "network:request"],
+  "allowedHosts": ["api.notion.com", "*.notion.so", "*.amazonaws.com", "*.notion-static.com"],
+  "storage": {
+    // Notion pageId ↔ emdash contentId のマッピングと同期ハッシュ。
+    // WHY: storage collection 名は emdash-plugin.jsonc のスキーマ上 /^[a-z][a-z0-9_]*$/
+    // （小文字・数字・アンダースコアのみ）に制限されるため、旧 descriptor の camelCase
+    // "syncMap" は使えず "sync_map" にリネームした（ランタイム側は ctx.storage.sync_map）。
+    "sync_map": { "indexes": ["emdashId", "updatedAt", "collection"] },
+  },
+
+  "admin": {
+    // WHY: admin page の path はスキーマ上 2 文字以上（先頭 "/" + 名前）が必須のため "/" は使えない。
+    "pages": [{ "path": "/settings", "label": "notion-sync", "icon": "settings" }],
+  },
+}

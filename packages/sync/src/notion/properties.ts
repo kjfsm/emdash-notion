@@ -5,7 +5,7 @@ export interface MappedProperties {
   /**
    * Notion 側で公開扱いか（status/select が "published"/"public" 等）。
    * WHY: Sandboxed の content 書込 API では emdash の status 列を設定できないため、
-   * 現状は syncMap に記録するだけで content には反映しない（Native 移行時に利用）。
+   * 現状は sync_map に記録するだけで content には反映しない（Native 移行時に利用）。
    */
   published: boolean;
   /** `authorProperty` で指定した rich_text プロパティの値。未設定/該当なしなら空文字。 */
