@@ -67,17 +67,26 @@ export const DEFAULT_SLUG_PROPERTY = "slug";
 export const DEFAULT_AUTHOR_FIELD = "";
 export const DEFAULT_SLUG_FIELD = "";
 
-function normalizeMapping(raw: Partial<NotionMapping>): NotionMapping {
+/**
+ * マッピングの各フィールドへ既定値を適用する共通処理。`get(key)` は生の文字列値を返す
+ * （kv 由来は素の値、フォーム由来は trim 済み）。title/body/author/slugProperty は空文字なら
+ * 既定へ、collection/databaseId/authorField/slugField は空文字のまま（既定が空文字）。
+ */
+export function applyMappingDefaults(get: (key: keyof NotionMapping) => string): NotionMapping {
   return {
-    collection: raw.collection ?? "",
-    databaseId: raw.databaseId ?? "",
-    titleField: raw.titleField || DEFAULT_TITLE_FIELD,
-    bodyField: raw.bodyField || DEFAULT_BODY_FIELD,
-    authorProperty: raw.authorProperty || DEFAULT_AUTHOR_PROPERTY,
-    authorField: raw.authorField ?? DEFAULT_AUTHOR_FIELD,
-    slugProperty: raw.slugProperty || DEFAULT_SLUG_PROPERTY,
-    slugField: raw.slugField ?? DEFAULT_SLUG_FIELD,
+    collection: get("collection"),
+    databaseId: get("databaseId"),
+    titleField: get("titleField") || DEFAULT_TITLE_FIELD,
+    bodyField: get("bodyField") || DEFAULT_BODY_FIELD,
+    authorProperty: get("authorProperty") || DEFAULT_AUTHOR_PROPERTY,
+    authorField: get("authorField"),
+    slugProperty: get("slugProperty") || DEFAULT_SLUG_PROPERTY,
+    slugField: get("slugField"),
   };
+}
+
+function normalizeMapping(raw: Partial<NotionMapping>): NotionMapping {
+  return applyMappingDefaults((key) => raw[key] ?? "");
 }
 
 /** kv から設定を読み出す。未設定フィールドは既定値または空文字で埋める。 */

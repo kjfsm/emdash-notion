@@ -1,23 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { mapProperties } from "../src/notion/properties.js";
-import type { NotionPage, NotionRichText } from "../src/notion/types.js";
-
-function rt(text: string): NotionRichText {
-  return {
-    type: "text",
-    plain_text: text,
-    href: null,
-    annotations: {
-      bold: false,
-      italic: false,
-      strikethrough: false,
-      underline: false,
-      code: false,
-      color: "default",
-    },
-  };
-}
+import type { NotionPage } from "../src/notion/types.js";
+import { makeRichText as rt } from "./helpers.js";
 
 function page(properties: NotionPage["properties"]): NotionPage {
   return {

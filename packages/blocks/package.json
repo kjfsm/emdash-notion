@@ -42,6 +42,10 @@
       "types": "./dist/safe-url.d.mts",
       "import": "./dist/safe-url.mjs"
     },
+    "./portable-text-block": {
+      "types": "./dist/portable-text-block.d.mts",
+      "import": "./dist/portable-text-block.mjs"
+    },
     "./astro": "./src/astro/index.ts",
     "./NotionBookmark.astro": "./src/NotionBookmark.astro",
     "./NotionCallout.astro": "./src/NotionCallout.astro",
@@ -57,7 +61,7 @@
   "scripts": {
     "gen-version": "node ../../scripts/gen-version.mjs",
     "prebuild": "pnpm gen-version",
-    "build": "tsdown src/index.ts src/notion-color.ts src/safe-url.ts --dts.eager",
+    "build": "tsdown src/index.ts src/notion-color.ts src/safe-url.ts src/portable-text-block.ts --dts.eager",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text",

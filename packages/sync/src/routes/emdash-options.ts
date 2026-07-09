@@ -1,12 +1,7 @@
 import type { PluginContext } from "emdash";
 import type { SandboxedRouteContext } from "emdash/plugin";
 
-import { loadConfig } from "../config.js";
-
-interface OptionItem {
-  id: string;
-  name: string;
-}
+import { loadConfig, type OptionItem } from "../config.js";
 
 /**
  * 1 コレクションあたりサンプルする件数。

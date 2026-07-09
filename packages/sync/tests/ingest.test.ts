@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ingestPage } from "../src/sync/ingest.js";
-import { createTestContext, makeNotionHttp } from "./helpers.js";
+import { createTestContext, makeNotionHttp, makeRichText } from "./helpers.js";
 
 function notionPage(id: string, lastEdited: string) {
   return {
@@ -12,25 +12,7 @@ function notionPage(id: string, lastEdited: string) {
     archived: false,
     parent: { type: "data_source_id", data_source_id: "db1" },
     properties: {
-      Name: {
-        id: "title",
-        type: "title",
-        title: [
-          {
-            type: "text",
-            plain_text: "My Page",
-            href: null,
-            annotations: {
-              bold: false,
-              italic: false,
-              strikethrough: false,
-              underline: false,
-              code: false,
-              color: "default",
-            },
-          },
-        ],
-      },
+      Name: { id: "title", type: "title", title: [makeRichText("My Page")] },
     },
   };
 }
@@ -42,21 +24,7 @@ function paragraph(id: string, text: string) {
     type: "paragraph",
     has_children: false,
     paragraph: {
-      rich_text: [
-        {
-          type: "text",
-          plain_text: text,
-          href: null,
-          annotations: {
-            bold: false,
-            italic: false,
-            strikethrough: false,
-            underline: false,
-            code: false,
-            color: "default",
-          },
-        },
-      ],
+      rich_text: [makeRichText(text)],
     },
   };
 }

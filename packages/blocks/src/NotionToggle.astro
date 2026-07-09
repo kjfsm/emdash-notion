@@ -1,6 +1,8 @@
 ---
 import { PortableText } from "emdash/ui";
 
+import { toTextBlock } from "@emdash-notion/blocks/portable-text-block";
+
 export interface Props {
   node: {
     _key: string;
@@ -11,13 +13,11 @@ export interface Props {
 }
 
 const { node } = Astro.props;
-const titleBlock = {
-  _type: "block" as const,
-  _key: `${node._key}-title`,
-  style: "normal",
-  children: node.children,
-  markDefs: node.markDefs,
-};
+const titleBlock = toTextBlock(
+  `${node._key}-title`,
+  node.children,
+  node.markDefs,
+);
 ---
 
 <details class="notion-toggle">

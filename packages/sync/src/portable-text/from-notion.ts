@@ -1,3 +1,4 @@
+import { plainText } from "../notion/plain-text.js";
 import type { NotionBlock, NotionRichText } from "../notion/types.js";
 import { escapeHtml } from "./html-escape.js";
 import { makeKeyGen } from "./keys.js";
@@ -13,6 +14,7 @@ import type {
   NotionTableOfContentsBlock,
   NotionTodoBlock,
   NotionToggleBlock,
+  OgpData,
   PortableTextBlock,
   PortableTextColumnBlock,
   PortableTextColumnsBlock,
@@ -44,12 +46,7 @@ export type FileResolver = (file: {
   blockId: string;
 }) => Promise<ImageRef>;
 
-export interface OgpData {
-  title?: string;
-  description?: string;
-  image?: string;
-  siteName?: string;
-}
+export type { OgpData };
 
 /** bookmark/link_preview の OGP メタデータを取得する。失敗時は undefined を返す。 */
 export type OgpFetcher = (url: string) => Promise<OgpData | undefined>;
@@ -221,7 +218,7 @@ async function convertBlock(
       out.push({
         _type: "code",
         _key: keygen(),
-        code: (code?.rich_text ?? []).map((rt) => rt.plain_text).join(""),
+        code: plainText(code?.rich_text),
         language: code?.language ?? "text",
       });
       break;
@@ -418,7 +415,7 @@ async function convertImage(
     | undefined;
   const url = image?.external?.url ?? image?.file?.url;
   if (!url) return null;
-  const alt = (image?.caption ?? []).map((rt) => rt.plain_text).join("");
+  const alt = plainText(image?.caption);
 
   const shouldPersist = image?.type === "file" && resolveImage;
   const resolved = shouldPersist
@@ -508,7 +505,7 @@ function convertLinkToPage(block: NotionBlock, keygen: () => string): NotionLink
 
 function convertTemplate(block: NotionBlock, keygen: () => string): PortableTextHtmlBlock {
   const template = block.template as { rich_text?: NotionRichText[] } | undefined;
-  const text = (template?.rich_text ?? []).map((rt) => rt.plain_text).join("");
+  const text = plainText(template?.rich_text);
   return htmlBlock(`<div class="notion-template">${escapeHtml(text)}</div>`, keygen);
 }
 
@@ -600,7 +597,7 @@ function convertMediaEmbed(
   const payload = block[kind] as NotionMediaPayload | undefined;
   const url = payload?.external?.url ?? payload?.file?.url;
   if (!url) return null;
-  const caption = (payload?.caption ?? []).map((rt) => rt.plain_text).join("");
+  const caption = plainText(payload?.caption);
   return { _type: "embed", _key: keygen(), url, provider: kind, caption: caption || undefined };
 }
 
@@ -636,7 +633,7 @@ async function convertFile(
 function convertEmbed(block: NotionBlock, keygen: () => string): PortableTextEmbedBlock | null {
   const payload = block.embed as { url?: string; caption?: NotionRichText[] } | undefined;
   if (!payload?.url) return null;
-  const caption = (payload.caption ?? []).map((rt) => rt.plain_text).join("");
+  const caption = plainText(payload.caption);
   return { _type: "embed", _key: keygen(), url: payload.url, caption: caption || undefined };
 }
 

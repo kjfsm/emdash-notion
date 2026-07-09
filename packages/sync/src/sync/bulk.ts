@@ -1,23 +1,13 @@
 import type { PluginContext } from "emdash";
 
 import { isConfigReady, loadConfig } from "../config.js";
-import { defaultLocale, getMessages, type Messages } from "../i18n/index.js";
+import { defaultLocale, getMessages, type Messages, type SyncCounts } from "../i18n/index.js";
 import { NotionApiError, NotionClient } from "../notion/client.js";
 import { deleteSyncedPage } from "./delete.js";
 import { ingestPage } from "./ingest.js";
 import { iterateMappings } from "./sync-map.js";
 
-export interface BulkSyncResult {
-  total: number;
-  created: number;
-  updated: number;
-  unchanged: number;
-  skipped: number;
-  failed: number;
-  /** 予算超過で本文末尾が欠落したまま保存されたページ数。 */
-  truncated: number;
-  /** Notion 側で削除・アーカイブされ、emdash 側をゴミ箱へ移したページ数。 */
-  deleted: number;
+export interface BulkSyncResult extends SyncCounts {
   errors: string[];
 }
 

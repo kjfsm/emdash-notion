@@ -2,7 +2,7 @@ import type { PluginContext } from "emdash";
 
 import { type Messages, messages } from "./messages.js";
 
-export type { Messages } from "./messages.js";
+export type { Messages, SyncCounts } from "./messages.js";
 
 export const LOCALES = ["en", "ja"] as const;
 export type Locale = (typeof LOCALES)[number];

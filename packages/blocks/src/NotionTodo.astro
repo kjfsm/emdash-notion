@@ -1,6 +1,8 @@
 ---
 import { PortableText } from "emdash/ui";
 
+import { toTextBlock } from "@emdash-notion/blocks/portable-text-block";
+
 export interface Props {
   node: {
     _key: string;
@@ -12,13 +14,11 @@ export interface Props {
 }
 
 const { node } = Astro.props;
-const textBlock = {
-  _type: "block" as const,
-  _key: `${node._key}-text`,
-  style: "normal",
-  children: node.children,
-  markDefs: node.markDefs,
-};
+const textBlock = toTextBlock(
+  `${node._key}-text`,
+  node.children,
+  node.markDefs,
+);
 const indent = ((node.level ?? 1) - 1) * 1.5;
 ---
 
