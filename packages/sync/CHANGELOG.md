@@ -1,5 +1,53 @@
 # @emdash-notion/sync
 
+## 0.3.0
+
+### Minor Changes
+
+- bcfdf06: Notion でのページ削除・アーカイブを emdash のゴミ箱へ同期するようになった:
+
+  - `page.deleted`/`page.undeleted` webhook イベント種別、ingest 内の `archived`/`in_trash` チェック、ページ完全削除時の 404 フォールバックの3層で検知する
+  - emdash 側は `ctx.content.delete`（ソフトデリート/ゴミ箱）で削除し、Notion 側で復元(undelete)されると次回同期で新規コンテンツとして作り直す
+  - 手動取得（`syncAll`）にも照合パスを追加: Notion の `queryDatabase` はアーカイブ済みページを返さないため、DB クエリで見えなくなった同期済みページを個別に確認し、削除・アーカイブが確認できたものだけ削除する（別 DB へ移動しただけの生存ページは削除しない）
+  - 管理画面の同期結果バナーに削除件数を表示
+
+  あわせて、`NotionClient` のリトライ/バックオフ、`stableHash`、`fetchPage` のリクエスト予算管理に専用のユニットテストを追加した(実装変更なし)。README に slug/status が emdash プラグイン API の制約で設定できない旨を明記した。
+
+- d2de830: notion-sync を standard format から sandboxed format（`emdash-plugin.jsonc` + `src/plugin.ts`、`@emdash-cms/plugin-cli` でビルド）へ移行した。
+
+  - `astro.config.mjs` での登録方法が `plugins: [notionSyncPlugin()]` から `sandboxed: [notionSync]`（+ `sandboxRunner` の設定）に変わる（破壊的変更）。default export をそのまま渡す形になり、ファクトリ関数呼び出しは不要になった
+  - EmDash マーケットプレイス/レジストリでの配布（`emdash-plugin bundle`/`publish`）が可能になった
+  - storage collection 名を `syncMap` → `sync_map` にリネーム（`emdash-plugin.jsonc` のスキーマが camelCase を許容しないため）。既存サイトでは移行時に一度だけ同期マップが再構築される（旧 `notion-sync` からの移行と同様の注意点）
+  - `admin.pages` のパスを `/` → `/settings` に変更（sandboxed マニフェストのスキーマ上 2 文字以上必須）
+
+  0.x のため、公開エントリポイントの shape 変更という破壊的変更を `minor` で表現している（CLAUDE.md ルール2の既定 `patch` から意図的に外れる）。
+
+### Patch Changes
+
+- 1b7444c: webhook 受信から Portable Text 変換・emdash 保存までを一気通貫で検証する結合テスト（`tests/integration.test.ts`）を追加した。
+- abc1ba4: これまで無言でドロップされていた未対応 Notion ブロックを再現するようになった:
+
+  - `table_of_contents`・`child_page`・`child_database`・`link_to_page` を新しい native カスタムブロック（`notionTableOfContents`・`notionChildPage`・`notionChildDatabase`・`notionLinkToPage`）として変換し、`notion-blocks` 側に対応する Astro コンポーネントを追加した
+  - `synced_block` は透過扱い（子ブロックのみ展開）、`template`・`tab` は emdash 標準の `htmlBlock`（サニタイズ済み生 HTML）で最小限のマーカーを出力するようにした
+  - 真に未知なブロック型（`rich_text` を持たないもの）も、完全ドロップの代わりに `<!-- notion:unsupported TYPE -->` を `htmlBlock` として出力し、サイト上で存在を可視化するようにした（`unsupported` ログへの記録は継続）
+  - `breadcrumb` は Notion API が親ページ階層を返さず実質空になるため対応しない
+
+  `htmlBlock` の既定サニタイズは `class`/`id`/`style` を許可しないため、見た目の制御が必要な4型のみ native ブロック化し、レアケースのみ `htmlBlock` フォールバックとした。
+
+- 29dcce4: メジャーリリースに向けた品質改善（1.0 前ハードニング）:
+
+  - descriptor の `version` を package.json から自動生成（`gen-version`）し、マニフェスト上のバージョン乖離を解消
+  - webhook の並行/重複配信による二重コンテンツ作成を、create 前の軽量な予約（pending/claimId）で best-effort に抑止（レビューで判明した「create 後の照合では真の同時実行を防げない」問題を受けて設計を修正し、無駄な重複作成自体を避けるようにした）
+  - リクエスト予算超過でブロックツリーが打ち切られた場合に `truncated` を伝播し、ハッシュに含めて次回の全量同期で自動修復（unchanged 判定時も保存済みの truncated 状態を返し続ける。管理画面バナーは実際の失敗と区別して表示）
+  - 重複 databaseId マッピングの警告を `loadConfig` に一本化し、webhook 経由の取り込みでも手動同期でも自動的に効くように修正
+  - スキーマ欠損検知の正規表現がテーブル修飾されたカラム名（`t.slug` 等）でも欠損フィールドを正しく特定できるよう修正
+  - 内部型パッケージ `@emdash-notion/types` を廃止し、カスタム Portable Text ブロック型を `@emdash-notion/sync/portable-text` として公開。公開物からの未公開パッケージ参照を除去し、notion-blocks とのズレを型パリティテストで検出
+  - notion-blocks の bookmark/callout で Notion 由来 URL のスキームを検証（`javascript:` 等を破棄）
+  - Notion API レスポンス型を公式 `@notionhq/client` 型と型レベルで照合しドリフトを検知（`import type` のみ、ランタイム非依存）
+  - 一括同期で 1 データベースのクエリ失敗が全体を止めないよう継続化、重複 databaseId マッピングを警告
+  - Retry-After の上限クランプ、`verification_token` のログマスク
+  - notion-blocks（color/safe-url/コンポーネント網羅/型パリティ）と sync（冪等性/truncate 等）のテスト拡充、README にブロック一覧・CSS カスタムプロパティを追記
+
 ## 0.2.0
 
 ### Minor Changes
