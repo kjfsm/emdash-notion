@@ -114,7 +114,17 @@ pnpm build       # emits dist/ per package (both build as normal npm packages)
 
 Run a script for a single package with `pnpm --filter @emdash-notion/sync <script>`, or `cd packages/sync && pnpm <script>`.
 
-Use `pnpm link` (or `pnpm link --global`) to reference a package from a local EmDash site for verification.
+**Verifying against a local EmDash site:** `pnpm link` is tempting but causes a duplicate `emdash` module instance — the linked package keeps resolving `emdash` from this monorepo's own `node_modules` (a different pnpm store than the site's), even after aligning version numbers, which can break plugin registration. Instead, `pnpm build && pnpm pack` each package (from `packages/sync` and `packages/blocks`) and add the resulting `.tgz` via an `overrides` entry in the site's `pnpm-workspace.yaml` (not the `package.json` `pnpm` field — recent pnpm versions no longer read overrides from there):
+
+```yaml
+overrides:
+  "@emdash-notion/sync": "file:/absolute/path/to/emdash-notion-sync-X.Y.Z.tgz"
+  "@emdash-notion/blocks": "file:/absolute/path/to/emdash-notion-blocks-X.Y.Z.tgz"
+```
+
+Then `pnpm install` in the site. This resolves through the site's own single lockfile, so there's exactly one `emdash` instance. Revert the override and reinstall when done.
+
+For exercising the plugin without a browser (its admin routes require a session + CSRF token that's awkward to fake with `curl`), the `emdash` CLI (already a site dependency) is useful: `pnpm exec emdash content create/get/delete/restore <collection> ...` lets you inspect trash/soft-delete behavior directly against the same D1 database the dev server uses.
 
 ## Migrating from the single-package `emdash-notion`
 

@@ -114,7 +114,17 @@ pnpm build       # パッケージごとに dist/ を出力（いずれも通常
 
 特定パッケージだけ実行するには `pnpm --filter @emdash-notion/sync <script>`、または `cd packages/sync && pnpm <script>` を使う。
 
-`pnpm link`（`pnpm link --global`）等でローカル emdash サイトから参照し、動作確認する。
+**ローカル emdash サイトでの動作確認**: `pnpm link` は手軽に見えるが、link したパッケージがこの monorepo 自身の `node_modules`（サイト側とは別の pnpm ストア）から `emdash` を解決し続けてしまい、バージョンを揃えても `emdash` が物理的に二重インスタンスになる（プラグイン登録が壊れうる）。代わりに、各パッケージ（`packages/sync`・`packages/blocks`）で `pnpm build && pnpm pack` し、生成された `.tgz` をサイト側の `pnpm-workspace.yaml` の `overrides` に指定する（`package.json` の `pnpm` フィールドではない — 最近の pnpm はそこから overrides を読まなくなった）:
+
+```yaml
+overrides:
+  "@emdash-notion/sync": "file:/絶対パス/emdash-notion-sync-X.Y.Z.tgz"
+  "@emdash-notion/blocks": "file:/絶対パス/emdash-notion-blocks-X.Y.Z.tgz"
+```
+
+その後サイト側で `pnpm install` する。サイト自身の単一 lockfile で解決されるため `emdash` インスタンスは1つに収まる。確認が終わったら override を戻して再インストールする。
+
+ブラウザを使わずにプラグインを動かして確認したい場合（管理画面のルートはセッション + CSRF トークンを要求し、`curl` での偽装が面倒）、`emdash` CLI（サイトの依存関係に既に含まれる）が便利: `pnpm exec emdash content create/get/delete/restore <collection> ...` で、dev サーバーが使っているのと同じ D1 データベースに対してゴミ箱・論理削除の挙動を直接確認できる。
 
 ## `emdash-notion`（単一パッケージ版）からの移行
 
