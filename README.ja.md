@@ -34,25 +34,36 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
 ## セットアップ
 
-1. `astro.config.mjs` で両方を登録する。`notion-blocks` は native format のため `plugins: []` に、`notion-sync` は sandboxed format のため `sandboxed: []` に登録し、`sandboxRunner`（Cloudflare Workers なら `@emdash-cms/cloudflare` の `sandbox()` 等）の設定が必要:
+1. `astro.config.mjs` で両方を登録する。`notion-blocks` は native format のため `plugins: []` に登録する。`notion-sync` は sandboxed format だが、`plugins: []`（in-process、isolation なし、追加設定不要）と `sandboxed: []`（isolation あり、`sandboxRunner` が必要）のどちらにも登録できる:
 
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { sandbox } from "@emdash-cms/cloudflare";
    import notionSync from "@emdash-notion/sync";
    import { notionBlocksPlugin } from "@emdash-notion/blocks";
 
    export default defineConfig({
      integrations: [
        emdash({
-         plugins: [notionBlocksPlugin()],
-         sandboxed: [notionSync],
-         sandboxRunner: sandbox(),
+         plugins: [notionBlocksPlugin(), notionSync],
        }),
      ],
    });
    ```
+
+   サンドボックス分離が必要（かつ利用可能）な場合は、`notionSync` を `sandboxed: []` へ移し `sandboxRunner` を設定する（例: Cloudflare Workers なら `@emdash-cms/cloudflare` の `sandbox()`）:
+
+   ```typescript
+   import { sandbox } from "@emdash-cms/cloudflare";
+   // ...
+   emdash({
+     plugins: [notionBlocksPlugin()],
+     sandboxed: [notionSync],
+     sandboxRunner: sandbox(),
+   });
+   ```
+
+   **Cloudflare の `sandbox()` ランナーは Workers Paid プラン専用**（実体である [Dynamic Worker Loader](https://developers.cloudflare.com/dynamic-workers/pricing/) が Free プランでは利用できない）。Free プランでは上記の `plugins: []` 形式（`sandboxRunner` 無し）を使う — EmDash は runner 未設定時、sandboxed format のプラグインを in-process 実行にフォールバックする。
 
    `notionBlocksPlugin()` は登録するだけでよく、設定ページは持たない。Notion 風の callout/to-do/toggle 表示が不要なら省略できる。Cloudflare Workers では `sandboxRunner` の利用に `wrangler.jsonc` の `worker_loaders` バインディングも必要（[Worker Loader のドキュメント](https://developers.cloudflare.com/workers/runtime-apis/bindings/worker-loader/)参照）。
 
@@ -136,7 +147,7 @@ overrides:
 以前のバージョンは単一の `emdash-notion` パッケージ（plugin id: `emdash-notion`）として配布していた。このパッケージは非推奨とし、`@emdash-notion/sync` + `@emdash-notion/blocks` に置き換える。移行手順:
 
 1. `emdash-notion` への依存を `@emdash-notion/sync`（必要なら `@emdash-notion/blocks` も）に置き換える。
-2. `astro.config.mjs` の登録を `emdashNotionPlugin()` から `notionSync`（`sandboxed: []` + `sandboxRunner`）・`notionBlocksPlugin()`（`plugins: []`）に変更する。
+2. `astro.config.mjs` の登録を `emdashNotionPlugin()` から `notionSync`・`notionBlocksPlugin()` に変更する（`plugins: []` と `sandboxed: []` の使い分けは上記「[セットアップ](#セットアップ)」参照）。
 3. Notion 側の Webhook 購読 URL を更新する: パスが `.../plugins/emdash-notion/webhook` から `.../plugins/notion-sync/webhook` に変わる。
 4. **プラグイン storage は plugin id ごとに名前空間が分かれる**ため、既存の Notion pageId ↔ emdash コンテンツ id の対応マップ（`ctx.storage.sync_map`）は `notion-sync` に引き継がれない。`ingest.ts` は create/update の判定をこのマップのみで行うため、移行後に最初の手動取得を行うと、対応済みのページが**新規コンテンツとして重複作成される**。重複を避けるには、再同期前に旧コンテンツを削除するか、別コレクションへマッピングし直すこと。
 

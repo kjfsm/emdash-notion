@@ -34,25 +34,36 @@ A pnpm monorepo that receives Notion webhooks, converts pages to [Portable Text]
 
 ## Setup
 
-1. Register both plugins in `astro.config.mjs`. `notion-blocks` is native format, so it goes in `plugins: []`. `notion-sync` is sandboxed format, so it goes in `sandboxed: []` and requires a `sandboxRunner` (e.g. `sandbox()` from `@emdash-cms/cloudflare` on Cloudflare Workers):
+1. Register both plugins in `astro.config.mjs`. `notion-blocks` is native format, so it goes in `plugins: []`. `notion-sync` is sandboxed format, but works either in `plugins: []` (in-process, no isolation, no extra setup) or `sandboxed: []` (isolated, requires a `sandboxRunner`):
 
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { sandbox } from "@emdash-cms/cloudflare";
    import notionSync from "@emdash-notion/sync";
    import { notionBlocksPlugin } from "@emdash-notion/blocks";
 
    export default defineConfig({
      integrations: [
        emdash({
-         plugins: [notionBlocksPlugin()],
-         sandboxed: [notionSync],
-         sandboxRunner: sandbox(),
+         plugins: [notionBlocksPlugin(), notionSync],
        }),
      ],
    });
    ```
+
+   For sandbox isolation (recommended if available), move `notionSync` to `sandboxed: []` and add a `sandboxRunner`, e.g. `sandbox()` from `@emdash-cms/cloudflare` on Cloudflare Workers:
+
+   ```typescript
+   import { sandbox } from "@emdash-cms/cloudflare";
+   // ...
+   emdash({
+     plugins: [notionBlocksPlugin()],
+     sandboxed: [notionSync],
+     sandboxRunner: sandbox(),
+   });
+   ```
+
+   **Cloudflare's `sandbox()` runner requires a Workers Paid plan** — the underlying [Dynamic Worker Loader](https://developers.cloudflare.com/dynamic-workers/pricing/) isn't available on the Free plan. On Free, use the `plugins: []` form above (no `sandboxRunner`); EmDash runs sandboxed-format plugins in-process when no runner is configured.
 
    `notionBlocksPlugin()` only needs to be registered — it has no settings page. If you don't need Notion-styled callouts/to-dos/toggles, you can omit it. On Cloudflare Workers, `sandboxRunner` also requires a `worker_loaders` binding in `wrangler.jsonc` (see [Cloudflare's Worker Loader docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/worker-loader/)).
 
@@ -136,7 +147,7 @@ For exercising the plugin without a browser (its admin routes require a session 
 Earlier versions of this repo published a single `emdash-notion` package (plugin id `emdash-notion`). That package is deprecated in favor of `@emdash-notion/sync` + `@emdash-notion/blocks`. To migrate:
 
 1. Replace the `emdash-notion` dependency with `@emdash-notion/sync` (and optionally `@emdash-notion/blocks`).
-2. Update `astro.config.mjs` to register `notionSync` (in `sandboxed: []`, plus a `sandboxRunner`) and `notionBlocksPlugin()` (in `plugins: []`) instead of `emdashNotionPlugin()`.
+2. Update `astro.config.mjs` to register `notionSync` and `notionBlocksPlugin()` instead of `emdashNotionPlugin()` (see [Setup](#setup) above for the `plugins: []` vs `sandboxed: []` options).
 3. Update the Notion webhook subscription URL: the path segment changes from `.../plugins/emdash-notion/webhook` to `.../plugins/notion-sync/webhook`.
 4. **Plugin storage is namespaced by plugin id**, so the existing Notion pageId ↔ EmDash contentId sync map (`ctx.storage.sync_map`) does not carry over to `notion-sync`. Because `ingest.ts` decides create-vs-update solely from that map, the first manual fetch after migrating will **re-create** every mapped page as new EmDash content rather than updating the existing entries. Delete the old EmDash entries before re-syncing, or map to a fresh collection, to avoid duplicates.
 
