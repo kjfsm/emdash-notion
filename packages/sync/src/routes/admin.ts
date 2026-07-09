@@ -48,7 +48,7 @@ const SAVE_MAPPING_PREFIX = "save_mapping_";
 const DELETE_MAPPING_PREFIX = "delete_mapping_";
 const NEW_MAPPING_KEY = "new";
 
-/** `src/index.ts` の `id: "notion-sync"` と同じ値。webhook ルートの絶対 URL を組み立てる。 */
+/** `emdash-plugin.jsonc` の `slug: "notion-sync"` と同じ値。webhook ルートの絶対 URL を組み立てる。 */
 function buildWebhookUrl(ctx: PluginContext, token: string): string {
   return `${ctx.url("/_emdash/api/plugins/notion-sync/webhook")}?token=${encodeURIComponent(token)}`;
 }

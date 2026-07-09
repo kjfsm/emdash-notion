@@ -12,6 +12,6 @@
     "rootDir": "src",
     "types": []
   },
-  "include": ["src/**/*"],
+  "include": ["src/portable-text/types.ts"],
   "exclude": ["node_modules", "dist", "tests/**/*"]
 }

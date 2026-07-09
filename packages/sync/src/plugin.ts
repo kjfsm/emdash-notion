@@ -12,8 +12,8 @@ import { handleWebhook } from "./routes/webhook.js";
  * Block Kit 設定ページ（`routes/admin.ts`）から入力し、`ctx.kv` の `settings:` 名前空間へ
  * 保存される（`src/config.ts` が同じキー名で読み出す）。
  *
- * id/version/capabilities/allowedHosts/storage/adminPages は descriptor（`index.ts`）側で
- * 宣言する（standard format のランタイム定義には含めない）。
+ * slug/capabilities/allowedHosts/storage/admin.pages は `emdash-plugin.jsonc` マニフェスト側で
+ * 宣言する（このファイルには hooks/routes のランタイム実装のみを置く）。
  */
 export default {
   routes: {

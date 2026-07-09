@@ -66,7 +66,7 @@ export function createTestContext(options: TestContextOptions = {}): TestContext
     plugin: { id: "notion-sync", version: "0.1.0" },
     site: { name: "Test", url: "https://example.com", locale: "en" },
     url: (p: string) => `https://example.com${p}`,
-    storage: { syncMap: sync.collection },
+    storage: { sync_map: sync.collection },
     kv: {
       get: async <T>(key: string) => (kv.has(key) ? (kv.get(key) as T) : null),
       set: async (key: string, value: unknown) => void kv.set(key, value),
