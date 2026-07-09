@@ -52,6 +52,8 @@
 
 Notion API・EmDash API の実ソースやレスポンスを検証して判明した、ドキュメントや想定と異なる事実をここに日付付きで蓄積する。
 
+<!-- confirmed 2026-07-09: emdash 標準の htmlBlock 型（{_type:"htmlBlock", html: string}）は packages/sync（standard format）から直接出力でき、packages/blocks（native）側の componentsEntry 対応は不要（emdash 本体が自動描画する）。ただし既定の sanitize-html は class/id/style をどの要素にも許可しない（公式ドキュメントのカスタマイズ例が "*": ["class","id","data-*","style"] を明示的に追加していることで確認）。そのためサイト側が htmlBlock コンポーネントをオーバーライドしない限り見た目の制御が一切できず、Notion 風の見た目が必要なブロックは native カスタムブロック化（notionCallout 等と同じパターン）が必須。未対応 Notion ブロック（table_of_contents/child_page/child_database/link_to_page/synced_block/template/tab 等）のフォールバック方針は from-notion.ts の convertBlock 実装・.changeset/notion-html-fallback-blocks.md を参照。 -->
+
 <!-- confirmed 2026-07-08: EmDash の capability 名は `content:read`/`content:write`/`media:read`/`media:write`/`network:request`（公式スキル `creating-plugins` と一致）。`network:fetch` ではない。 -->
 <!-- confirmed 2026-07-08: `ctx.storage`（StorageCollection）に原子的な compare-and-set/putIfAbsent は無い（get/put/exists/query 等のみ）。そのため webhook の並行重複配信に対する二重作成を完全には排他できない。`ingest.ts` は「create 前」に軽量な予約レコード（pending + claimId）を書いて直後に読み直す方式で無防備な区間を縮めている（create 後に照合して削除する旧方式は、真の同時実行では両者が削除条件を満たさず二重作成を防げないレビューで判明したため撤回した）。真の同時書き込み（両者が予約の読み直し前に書き込む）は依然として理論上すり抜けうる best-effort。 -->
 <!-- confirmed 2026-07-08: EmDash はプラグインにコレクションのスキーマ取得 API を公開していない。存在しないフィールドへの書き込みは D1/SQLite のエラー文言（"no such column: X" / "has no column named X"）でしか検知できず、`ingest.ts` の MISSING_COLUMN_RE はこの文言に依存する脆い実装（API が公開されたら差し替える）。 -->

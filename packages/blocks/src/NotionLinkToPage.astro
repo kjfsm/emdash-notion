@@ -1,0 +1,35 @@
+---
+export interface Props {
+  node: {
+    _key: string;
+    kind: "page" | "database";
+    targetId: string;
+    title?: string;
+  };
+}
+
+const { node } = Astro.props;
+const icon = node.kind === "database" ? "🗄️" : "📋";
+---
+
+<!-- Notion API はリンク先タイトル・emdash 上の URL を返さないため、リンクにはせずカード表示のみ行う。 -->
+<div class="notion-link-to-page" data-notion-target-id={node.targetId} data-notion-kind={node.kind}>
+  <span class="notion-link-to-page__icon" aria-hidden="true">{icon}</span>
+  <span class="notion-link-to-page__title">{node.title ?? node.targetId}</span>
+</div>
+
+<style>
+  .notion-link-to-page {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e3e2e0;
+    border-radius: 6px;
+    margin: 0.5rem 0;
+  }
+
+  .notion-link-to-page__title {
+    font-weight: 500;
+  }
+</style>

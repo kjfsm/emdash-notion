@@ -1,11 +1,16 @@
 import type { NotionBlock, NotionRichText } from "../notion/types.js";
+import { escapeHtml } from "./html-escape.js";
 import { makeKeyGen } from "./keys.js";
 import { richTextToInline } from "./rich-text.js";
 import type {
   NotionBookmarkBlock,
   NotionCalloutBlock,
   NotionCalloutIcon,
+  NotionChildDatabaseBlock,
+  NotionChildPageBlock,
   NotionEquationBlock,
+  NotionLinkToPageBlock,
+  NotionTableOfContentsBlock,
   NotionTodoBlock,
   NotionToggleBlock,
   PortableTextBlock,
@@ -13,6 +18,7 @@ import type {
   PortableTextColumnsBlock,
   PortableTextEmbedBlock,
   PortableTextFileBlock,
+  PortableTextHtmlBlock,
   PortableTextImage,
   PortableTextNode,
   PortableTextTableBlock,
@@ -269,11 +275,47 @@ async function convertBlock(
       if (bookmark) out.push(bookmark);
       break;
     }
+    case "table_of_contents": {
+      out.push(convertTableOfContents(block, keygen));
+      break;
+    }
+    case "child_page": {
+      const childPage = convertChildPage(block, keygen);
+      if (childPage) out.push(childPage);
+      break;
+    }
+    case "child_database": {
+      const childDatabase = convertChildDatabase(block, keygen);
+      if (childDatabase) out.push(childDatabase);
+      break;
+    }
+    case "link_to_page": {
+      const linkToPage = convertLinkToPage(block, keygen);
+      if (linkToPage) out.push(linkToPage);
+      break;
+    }
+    case "synced_block": {
+      // HTML ラッパーは Portable Text の配列構造と相性が悪いため、ノードは出さず子だけ流す。
+      await walk(block.children ?? [], level, out, keygen, resolvers, unsupported);
+      return;
+    }
+    case "template": {
+      out.push(convertTemplate(block, keygen));
+      await walk(block.children ?? [], level, out, keygen, resolvers, unsupported);
+      return;
+    }
+    case "tab": {
+      out.push(htmlBlock('<div class="notion-tab"></div>', keygen));
+      await walk(block.children ?? [], level, out, keygen, resolvers, unsupported);
+      return;
+    }
     default: {
       unsupported.add(type);
       // 未知でも rich_text を持つブロックは本文欠落を避けるため段落へフォールバックする。
       if (data?.rich_text && data.rich_text.length > 0) {
         out.push(textBlock("normal", data.rich_text, keygen));
+      } else {
+        out.push(htmlBlock(`<!-- notion:unsupported ${escapeHtml(type)} -->`, keygen));
       }
       await walk(block.children ?? [], level, out, keygen, resolvers, unsupported);
       return;
@@ -396,6 +438,78 @@ function convertEquation(block: NotionBlock, keygen: () => string): NotionEquati
   const equation = block.equation as { expression?: string } | undefined;
   if (!equation?.expression) return null;
   return { _type: "notionEquation", _key: keygen(), expression: equation.expression };
+}
+
+function htmlBlock(html: string, keygen: () => string): PortableTextHtmlBlock {
+  return { _type: "htmlBlock", _key: keygen(), html };
+}
+
+function convertTableOfContents(
+  block: NotionBlock,
+  keygen: () => string,
+): NotionTableOfContentsBlock {
+  const toc = block.table_of_contents as { color?: string } | undefined;
+  return {
+    _type: "notionTableOfContents",
+    _key: keygen(),
+    color: toc?.color && toc.color !== "default" ? toc.color : undefined,
+  };
+}
+
+function convertChildPage(block: NotionBlock, keygen: () => string): NotionChildPageBlock | null {
+  const childPage = block.child_page as { title?: string } | undefined;
+  if (!childPage) return null;
+  return {
+    _type: "notionChildPage",
+    _key: keygen(),
+    pageId: block.id,
+    title: childPage.title || "Untitled",
+  };
+}
+
+function convertChildDatabase(
+  block: NotionBlock,
+  keygen: () => string,
+): NotionChildDatabaseBlock | null {
+  const childDatabase = block.child_database as { title?: string } | undefined;
+  if (!childDatabase) return null;
+  return {
+    _type: "notionChildDatabase",
+    _key: keygen(),
+    databaseId: block.id,
+    title: childDatabase.title || "Untitled",
+  };
+}
+
+/** Notion API はリンク先のタイトルを返さないため、`title` は付与せず targetId をそのまま保持する。 */
+function convertLinkToPage(block: NotionBlock, keygen: () => string): NotionLinkToPageBlock | null {
+  const linkToPage = block.link_to_page as
+    | { type?: string; page_id?: string; database_id?: string }
+    | undefined;
+  if (!linkToPage) return null;
+  if (linkToPage.type === "page_id" && linkToPage.page_id) {
+    return {
+      _type: "notionLinkToPage",
+      _key: keygen(),
+      kind: "page",
+      targetId: linkToPage.page_id,
+    };
+  }
+  if (linkToPage.type === "database_id" && linkToPage.database_id) {
+    return {
+      _type: "notionLinkToPage",
+      _key: keygen(),
+      kind: "database",
+      targetId: linkToPage.database_id,
+    };
+  }
+  return null;
+}
+
+function convertTemplate(block: NotionBlock, keygen: () => string): PortableTextHtmlBlock {
+  const template = block.template as { rich_text?: NotionRichText[] } | undefined;
+  const text = (template?.rich_text ?? []).map((rt) => rt.plain_text).join("");
+  return htmlBlock(`<div class="notion-template">${escapeHtml(text)}</div>`, keygen);
 }
 
 interface NotionTablePayload {

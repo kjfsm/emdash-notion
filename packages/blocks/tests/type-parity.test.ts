@@ -1,7 +1,11 @@
 import type {
   NotionBookmarkBlock,
   NotionCalloutBlock,
+  NotionChildDatabaseBlock,
+  NotionChildPageBlock,
   NotionEquationBlock,
+  NotionLinkToPageBlock,
+  NotionTableOfContentsBlock,
   NotionTodoBlock,
   NotionToggleBlock,
 } from "@emdash-notion/sync/portable-text";
@@ -38,6 +42,10 @@ type BookmarkNode = {
   markDefs?: unknown[];
   og?: { title?: string; description?: string; image?: string; siteName?: string };
 };
+type TableOfContentsNode = { _key: string; color?: string };
+type ChildPageNode = { _key: string; pageId: string; title: string };
+type ChildDatabaseNode = { _key: string; databaseId: string; title: string };
+type LinkToPageNode = { _key: string; kind: "page" | "database"; targetId: string; title?: string };
 
 type AssignableTo<Sub, Super> = Sub extends Super
   ? true
@@ -67,6 +75,10 @@ const _todo: AssignableTo<NotionTodoBlock, TodoNode> = true;
 const _toggle: AssignableTo<NotionToggleBlock, ToggleNode> = true;
 const _equation: AssignableTo<NotionEquationBlock, EquationNode> = true;
 const _bookmark: AssignableTo<NotionBookmarkBlock, BookmarkNode> = true;
+const _toc: AssignableTo<NotionTableOfContentsBlock, TableOfContentsNode> = true;
+const _childPage: AssignableTo<NotionChildPageBlock, ChildPageNode> = true;
+const _childDatabase: AssignableTo<NotionChildDatabaseBlock, ChildDatabaseNode> = true;
+const _linkToPage: AssignableTo<NotionLinkToPageBlock, LinkToPageNode> = true;
 
 // キー集合そのもののズレ（欠落・余剰）を検出する。
 const _calloutKeys: NoExtraKeys<CalloutNode, NotionCalloutBlock> = true;
@@ -74,14 +86,32 @@ const _todoKeys: NoExtraKeys<TodoNode, NotionTodoBlock> = true;
 const _toggleKeys: NoExtraKeys<ToggleNode, NotionToggleBlock> = true;
 const _equationKeys: NoExtraKeys<EquationNode, NotionEquationBlock> = true;
 const _bookmarkKeys: NoExtraKeys<BookmarkNode, NotionBookmarkBlock> = true;
+const _tocKeys: NoExtraKeys<TableOfContentsNode, NotionTableOfContentsBlock> = true;
+const _childPageKeys: NoExtraKeys<ChildPageNode, NotionChildPageBlock> = true;
+const _childDatabaseKeys: NoExtraKeys<ChildDatabaseNode, NotionChildDatabaseBlock> = true;
+const _linkToPageKeys: NoExtraKeys<LinkToPageNode, NotionLinkToPageBlock> = true;
 
 it("notion-blocks の Props は notion-sync の出力型と構造一致する", () => {
-  expect([_callout, _todo, _toggle, _equation, _bookmark]).toEqual([true, true, true, true, true]);
-  expect([_calloutKeys, _todoKeys, _toggleKeys, _equationKeys, _bookmarkKeys]).toEqual([
-    true,
-    true,
-    true,
-    true,
-    true,
-  ]);
+  expect([
+    _callout,
+    _todo,
+    _toggle,
+    _equation,
+    _bookmark,
+    _toc,
+    _childPage,
+    _childDatabase,
+    _linkToPage,
+  ]).toEqual([true, true, true, true, true, true, true, true, true]);
+  expect([
+    _calloutKeys,
+    _todoKeys,
+    _toggleKeys,
+    _equationKeys,
+    _bookmarkKeys,
+    _tocKeys,
+    _childPageKeys,
+    _childDatabaseKeys,
+    _linkToPageKeys,
+  ]).toEqual([true, true, true, true, true, true, true, true, true]);
 });

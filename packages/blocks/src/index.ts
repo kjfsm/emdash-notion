@@ -35,6 +35,10 @@ export function createPlugin() {
         { type: "notionToggle", label: "Notion Toggle", icon: "chevron-down" },
         { type: "notionEquation", label: "Notion Equation", icon: "sigma" },
         { type: "notionBookmark", label: "Notion Bookmark", icon: "link" },
+        { type: "notionTableOfContents", label: "Notion Table of Contents", icon: "link" },
+        { type: "notionChildPage", label: "Notion Child Page", icon: "link" },
+        { type: "notionChildDatabase", label: "Notion Child Database", icon: "link" },
+        { type: "notionLinkToPage", label: "Notion Link to Page", icon: "link-external" },
       ],
     },
   });
