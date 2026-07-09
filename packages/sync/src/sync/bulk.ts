@@ -24,6 +24,12 @@ export interface BulkSyncResult {
 /**
  * 手動取得（管理画面の「手動取得」ボタン）。設定済みの全マッピングを対象に、DB ごとに 1 件ずつ `ingestPage` する。
  * @param m バナー表示に使うメッセージ束。未指定なら既定言語（利用者向け文字列のみ localize、ログは英語のまま）。
+ *
+ * TODO(2026-07-09, marketplace 配布前に要対応): 全マッピングの全ページを 1 回のルート呼び出し内で
+ * ループする設計のため、sandboxed 実行下（Cloudflare Worker Loader、subrequest 上限 10/呼び出し）では
+ * ページ数が数件を超えるデータベースで確実に上限超過・失敗する。チャンク分割（1 呼び出しで N 件だけ処理し、
+ * カーソルを storage/KV に永続化して次の呼び出しで続きから再開する）は未実装。実機検証のうえ対応すること
+ * （CLAUDE.md「確認済みの技術メモ」参照）。
  */
 export async function syncAll(
   ctx: PluginContext,
@@ -110,7 +116,7 @@ export async function syncAll(
 }
 
 /**
- * 照合パス: syncMap にあるが今回の DB クエリで見えなくなったページ（Notion の queryDatabase は
+ * 照合パス: sync_map にあるが今回の DB クエリで見えなくなったページ（Notion の queryDatabase は
  * アーカイブ/ゴミ箱入りのページを返さない）について、実際に削除・アーカイブされたのか
  * （生存していて単に別 DB へ移動しただけではないか）を 1 件ずつ確認し、削除済みなら
  * emdash 側もゴミ箱へ移す。

@@ -73,7 +73,7 @@ describe("ingestPage", () => {
     expect(res.status).toBe("skipped");
   });
 
-  it("Notion ページを取得して content.create し、syncMap に記録する", async () => {
+  it("Notion ページを取得して content.create し、sync_map に記録する", async () => {
     const fetch = makeNotionHttp({
       pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
       children: { page1: { results: [paragraph("b1", "Hello body")] } },
@@ -91,7 +91,7 @@ describe("ingestPage", () => {
     }>;
     expect(body[0]!._type).toBe("block");
     expect(body[0]!.children?.[0]!.text).toBe("Hello body");
-    // syncMap に notionId で記録されている。
+    // sync_map に notionId で記録されている。
     expect(t.syncStore.has("page1")).toBe(true);
   });
 
@@ -318,12 +318,12 @@ describe("ingestPage", () => {
     // getMapping の 2 回目の呼び出し（＝自分の予約書き込み直後の読み直し）で、
     // 別リクエストが先に予約を上書きした状況を注入する。content.create() より前なので、
     // 旧方式（create 後に照合）と違い、無駄な重複コンテンツは一切作られないはず。
-    const originalGet = t.ctx.storage.syncMap.get.bind(t.ctx.storage.syncMap);
+    const originalGet = t.ctx.storage.sync_map.get.bind(t.ctx.storage.sync_map);
     let getCalls = 0;
-    t.ctx.storage.syncMap.get = (async (id: string) => {
+    t.ctx.storage.sync_map.get = (async (id: string) => {
       getCalls++;
       if (getCalls === 2) {
-        await t.ctx.storage.syncMap.put(id, {
+        await t.ctx.storage.sync_map.put(id, {
           emdashId: "",
           updatedAt: "2026-02-01T00:00:00.000Z",
           hash: "other",
@@ -333,7 +333,7 @@ describe("ingestPage", () => {
         });
       }
       return originalGet(id);
-    }) as typeof t.ctx.storage.syncMap.get;
+    }) as typeof t.ctx.storage.sync_map.get;
 
     const res = await ingestPage(t.ctx, "page1");
     expect(res.status).toBe("skipped");
@@ -429,7 +429,7 @@ describe("ingestPage", () => {
 });
 
 describe("ingestPage の削除・アーカイブ検知", () => {
-  it("archived:true のページは content.delete してゴミ箱へ移し、syncMap に deletedAt/collection を残す", async () => {
+  it("archived:true のページは content.delete してゴミ箱へ移し、sync_map に deletedAt/collection を残す", async () => {
     const fetch = makeNotionHttp({
       pages: { page1: notionPage("page1", "2026-02-01T00:00:00.000Z") },
       children: { page1: { results: [paragraph("b1", "Hello body")] } },

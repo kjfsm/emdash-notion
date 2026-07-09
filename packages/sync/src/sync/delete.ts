@@ -5,7 +5,7 @@ import { getMapping, putMapping } from "./sync-map.js";
 
 /**
  * Notion 側で削除・アーカイブされたページに対応する emdash コンテンツをゴミ箱へ移す（論理削除）。
- * syncMap のレコード自体は消さず `deletedAt` を付けて残す — 復元（undelete）時に同じ Notion
+ * sync_map のレコード自体は消さず `deletedAt` を付けて残す — 復元（undelete）時に同じ Notion
  * ページの再同期であることを追跡し続け、無条件の新規重複作成を避けるため（`ingest.ts` 参照）。
  */
 export async function deleteSyncedPage(

@@ -2,9 +2,9 @@
 
 English version: [README.md](./README.md).
 
-Notion の Webhook を受け取り、ページを [Portable Text](https://github.com/portabletext/portabletext) に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する pnpm monorepo（Notion → emdash 一方向。MVP）。同期処理（standard プラグイン）と見た目（native プラグイン）を分離した 2 つのプラグインからなる。
+Notion の Webhook を受け取り、ページを [Portable Text](https://github.com/portabletext/portabletext) に変換して [EmDash CMS](https://emdashcms.com) のコンテンツへ同期する pnpm monorepo（Notion → emdash 一方向。MVP）。同期処理（sandboxed プラグイン）と見た目（native プラグイン）を分離した 2 つのプラグインからなる。
 
-- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync)、plugin id: `notion-sync`（**standard** format）。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
+- **[`packages/sync`](./packages/sync)** — npm: [`@emdash-notion/sync`](https://www.npmjs.com/package/@emdash-notion/sync)、plugin id: `notion-sync`（**sandboxed** format）。Notion から取得し Portable Text へ変換して emdash コンテンツへ書き込む。
 - **[`packages/blocks`](./packages/blocks)** — npm: [`@emdash-notion/blocks`](https://www.npmjs.com/package/@emdash-notion/blocks)、plugin id: `notion-blocks`（**native** format）。Notion 固有ブロック（callout・to-do・toggle・equation・bookmark・divider）を `componentsEntry` 経由で Notion 風の見た目に描画する。任意導入 — 未導入でもテキスト自体は保存されるが、特別なスタイルなしで表示されない。
 
 > 管理 UI（`notion-sync`）は **英語（既定）** と **日本語** に対応し、設定ページから切り替えられます。
@@ -17,7 +17,7 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 - タイトル・本文（Portable Text）に加えて、著者・slug などの任意プロパティも emdash フィールドへマッピング可能
 - 複数の emdash コレクションをそれぞれ別の Notion データベースへ紐づけ可能（コレクション ⇔ データベースの対応を複数登録できる）
 - 管理画面の「手動取得」ボタンで、設定済みの対応関係すべてを一括同期
-- Notion pageId ↔ emdash コンテンツ id の対応を `ctx.storage.syncMap` に保持（無変更 Webhook のスキップ用）
+- Notion pageId ↔ emdash コンテンツ id の対応を `ctx.storage.sync_map` に保持（無変更 Webhook のスキップ用）
 - 同期済みページが Notion 側で削除・アーカイブされると、対応する emdash コンテンツをゴミ箱へ移す（論理削除）。その後 Notion 側で復元（undelete）されると、次回同期で新規コンテンツとして作り直される。検知は3通り: `page.deleted`/`page.undeleted` webhook イベント種別、ingest のたびに行う `archived`/`in_trash` チェック（手動取得経由のページにも効く）、ページが完全削除された場合の 404 フォールバック。手動取得では、Notion の DB クエリ（アーカイブ済みページは返らない）に現れなくなった同期済みページも個別に確認して照合する — 別の場所で生存しているページは削除しない
 - Notion API 呼び出しは 429/5xx を指数バックオフで最大 3 回リトライし、`Retry-After`（上限 30 秒）を尊重する
 
@@ -34,24 +34,38 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
 ## セットアップ
 
-1. `astro.config.mjs` で両方を登録する（`notion-blocks` は native format のため `plugins: []` 専用。`notion-sync` は standard format だが、現状は同じ `plugins: []` に登録する）:
+1. `astro.config.mjs` で両方を登録する。`notion-blocks` は native format のため `plugins: []` に登録する。`notion-sync` は sandboxed format だが、`plugins: []`（in-process、isolation なし、追加設定不要）と `sandboxed: []`（isolation あり、`sandboxRunner` が必要）のどちらにも登録できる:
 
    ```typescript
    import { defineConfig } from "astro/config";
    import emdash from "emdash/astro";
-   import { notionSyncPlugin } from "@emdash-notion/sync";
+   import notionSync from "@emdash-notion/sync";
    import { notionBlocksPlugin } from "@emdash-notion/blocks";
 
    export default defineConfig({
      integrations: [
        emdash({
-         plugins: [notionSyncPlugin(), notionBlocksPlugin()],
+         plugins: [notionBlocksPlugin(), notionSync],
        }),
      ],
    });
    ```
 
-   `notionBlocksPlugin()` は登録するだけでよく、設定ページは持たない。Notion 風の callout/to-do/toggle 表示が不要なら省略できる。
+   サンドボックス分離が必要（かつ利用可能）な場合は、`notionSync` を `sandboxed: []` へ移し `sandboxRunner` を設定する（例: Cloudflare Workers なら `@emdash-cms/cloudflare` の `sandbox()`）:
+
+   ```typescript
+   import { sandbox } from "@emdash-cms/cloudflare";
+   // ...
+   emdash({
+     plugins: [notionBlocksPlugin()],
+     sandboxed: [notionSync],
+     sandboxRunner: sandbox(),
+   });
+   ```
+
+   **Cloudflare の `sandbox()` ランナーは Workers Paid プラン専用**（実体である [Dynamic Worker Loader](https://developers.cloudflare.com/dynamic-workers/pricing/) が Free プランでは利用できない）。Free プランでは上記の `plugins: []` 形式（`sandboxRunner` 無し）を使う — EmDash は runner 未設定時、sandboxed format のプラグインを in-process 実行にフォールバックする。
+
+   `notionBlocksPlugin()` は登録するだけでよく、設定ページは持たない。Notion 風の callout/to-do/toggle 表示が不要なら省略できる。Cloudflare Workers では `sandboxRunner` の利用に `wrangler.jsonc` の `worker_loaders` バインディングも必要（[Worker Loader のドキュメント](https://developers.cloudflare.com/workers/runtime-apis/bindings/worker-loader/)参照）。
 
 2. emdash 管理画面のプラグイン一覧 → `notion-sync` の歯車アイコンから設定ページを開き、次の順で設定する:
    1. **言語** — English / 日本語 を選ぶ（任意。既定は英語）
@@ -98,7 +112,7 @@ Notion の Webhook を受け取り、ページを [Portable Text](https://github
 
 ## 配布
 
-`notion-blocks` は `componentsEntry` を宣言する **native** プラグインのため、マーケットプレイス（sandboxed 向け）には公開できない。`notion-sync` は **standard** プラグインだが、`notion-blocks` と組で使う構成のため、両方とも **npm** で配布し `astro.config.mjs` に導入する。
+`notion-blocks` は `componentsEntry` を宣言する **native** プラグインのため、マーケットプレイス（sandboxed 向け）には公開できず、**npm** 配布のみで `astro.config.mjs` の `plugins: []` に導入する。`notion-sync` は **sandboxed** プラグインで、[`emdash-plugin` CLI](https://docs.emdashcms.com/plugins/creating-plugins/cli/) で構築する。npm 配布に加え、EmDash マーケットプレイス/レジストリへも公開してワンクリックインストールに対応できる。
 
 ## 開発
 
@@ -113,6 +127,8 @@ pnpm build       # パッケージごとに dist/ を出力（いずれも通常
 ```
 
 特定パッケージだけ実行するには `pnpm --filter @emdash-notion/sync <script>`、または `cd packages/sync && pnpm <script>` を使う。
+
+`packages/sync` のマニフェスト（`emdash-plugin.jsonc`）は `pnpm --filter @emdash-notion/sync validate`（[`emdash-plugin validate`](https://docs.emdashcms.com/plugins/creating-plugins/cli/) のラッパー）でオフライン検証できる。`build` スクリプトは `emdash-plugin build`（`dist/plugin.mjs`・`dist/manifest.json`・`dist/index.mjs` を生成）に続けて、`./portable-text` サブパスの型のみ別途 `tsc` でビルドする。
 
 **ローカル emdash サイトでの動作確認**: `pnpm link` は手軽に見えるが、link したパッケージがこの monorepo 自身の `node_modules`（サイト側とは別の pnpm ストア）から `emdash` を解決し続けてしまい、バージョンを揃えても `emdash` が物理的に二重インスタンスになる（プラグイン登録が壊れうる）。代わりに、各パッケージ（`packages/sync`・`packages/blocks`）で `pnpm build && pnpm pack` し、生成された `.tgz` をサイト側の `pnpm-workspace.yaml` の `overrides` に指定する（`package.json` の `pnpm` フィールドではない — 最近の pnpm はそこから overrides を読まなくなった）:
 
@@ -131,9 +147,9 @@ overrides:
 以前のバージョンは単一の `emdash-notion` パッケージ（plugin id: `emdash-notion`）として配布していた。このパッケージは非推奨とし、`@emdash-notion/sync` + `@emdash-notion/blocks` に置き換える。移行手順:
 
 1. `emdash-notion` への依存を `@emdash-notion/sync`（必要なら `@emdash-notion/blocks` も）に置き換える。
-2. `astro.config.mjs` の登録を `emdashNotionPlugin()` から `notionSyncPlugin()`（・`notionBlocksPlugin()`）に変更する。
+2. `astro.config.mjs` の登録を `emdashNotionPlugin()` から `notionSync`・`notionBlocksPlugin()` に変更する（`plugins: []` と `sandboxed: []` の使い分けは上記「[セットアップ](#セットアップ)」参照）。
 3. Notion 側の Webhook 購読 URL を更新する: パスが `.../plugins/emdash-notion/webhook` から `.../plugins/notion-sync/webhook` に変わる。
-4. **プラグイン storage は plugin id ごとに名前空間が分かれる**ため、既存の Notion pageId ↔ emdash コンテンツ id の対応マップ（`ctx.storage.syncMap`）は `notion-sync` に引き継がれない。`ingest.ts` は create/update の判定をこのマップのみで行うため、移行後に最初の手動取得を行うと、対応済みのページが**新規コンテンツとして重複作成される**。重複を避けるには、再同期前に旧コンテンツを削除するか、別コレクションへマッピングし直すこと。
+4. **プラグイン storage は plugin id ごとに名前空間が分かれる**ため、既存の Notion pageId ↔ emdash コンテンツ id の対応マップ（`ctx.storage.sync_map`）は `notion-sync` に引き継がれない。`ingest.ts` は create/update の判定をこのマップのみで行うため、移行後に最初の手動取得を行うと、対応済みのページが**新規コンテンツとして重複作成される**。重複を避けるには、再同期前に旧コンテンツを削除するか、別コレクションへマッピングし直すこと。
 
 ## ライセンス
 

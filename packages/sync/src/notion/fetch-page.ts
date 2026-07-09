@@ -13,6 +13,14 @@ export interface FetchedPage {
  *
  * WHY: sandbox の subrequest 上限（既定 10）を大きく超えないための安全弁。到達したら
  * `onTruncate` で通知し、静かに握り潰さない。trusted モードでは制限は無いが、暴走防止として残す。
+ *
+ * TODO(2026-07-09, marketplace 配布前に要対応): この定数（40）は Cloudflare Worker Loader の
+ * 実際の subrequest 上限（1呼び出しあたり10、`ctx.kv`/`ctx.content`/`ctx.storage` 呼び出しも
+ * 同じ予算を消費しうる）の4倍になっており、コメントの意図と数値が矛盾している。単一ページの
+ * ingest だけでも `loadConfig`（kv.get 5並列）+ ページ取得 + ブロックツリー取得（最大40）+
+ * 画像解決 + content.create/update + storage 書き込みで実上限を超える可能性が高い。
+ * マーケットプレイスへ publish する前に、実際の Cloudflare Workers + Worker Loader 環境で
+ * 実測のうえこの値を見直すこと（CLAUDE.md「確認済みの技術メモ」参照）。
  */
 const DEFAULT_MAX_REQUESTS = 40;
 
