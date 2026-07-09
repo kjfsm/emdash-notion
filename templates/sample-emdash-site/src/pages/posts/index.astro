@@ -2,9 +2,9 @@
 export const prerender = false;
 
 import {
-	getEmDashCollection,
-	getTaxonomyTerms,
-	getTermsForEntries,
+  getEmDashCollection,
+  getTaxonomyTerms,
+  getTermsForEntries,
 } from "emdash";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
@@ -16,11 +16,11 @@ import { getReadingTime } from "../../utils/reading-time";
 const activeTag = Astro.url.searchParams.get("tag");
 
 const [{ entries: sortedPosts, cacheHint }, tags] = await Promise.all([
-	getEmDashCollection("posts", {
-		orderBy: { published_at: "desc" },
-		...(activeTag ? { where: { tag: activeTag } } : {}),
-	}),
-	getTaxonomyTerms("tag"),
+  getEmDashCollection("posts", {
+    orderBy: { published_at: "desc" },
+    ...(activeTag ? { where: { tag: activeTag } } : {}),
+  }),
+  getTaxonomyTerms("tag"),
 ]);
 
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
@@ -28,194 +28,196 @@ if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 // Single batched JOIN for the tag pills shown on each card, instead of
 // one getEntryTerms() round-trip per card.
 const tagsByEntry = await getTermsForEntries(
-	"posts",
-	sortedPosts.map((p) => p.data.id),
-	"tag",
+  "posts",
+  sortedPosts.map((p) => p.data.id),
+  "tag",
 );
 const postsWithTags = sortedPosts.map((post) => ({
-	post,
-	postTags: tagsByEntry.get(post.data.id) ?? [],
+  post,
+  postTags: tagsByEntry.get(post.data.id) ?? [],
 }));
 ---
 
 <Base
-	title={activeTag
-		? `${tags.find((t) => t.slug === activeTag)?.label || activeTag} — Posts`
-		: "Posts"}
+  title={activeTag
+    ? `${tags.find((t) => t.slug === activeTag)?.label || activeTag} — Posts`
+    : "Posts"}
 >
-	<section class="posts-header">
-		<h1>Posts</h1>
-		<p class="posts-intro">Notes on design, development, and the work behind the work.</p>
+  <section class="posts-header">
+    <h1>Posts</h1>
+    <p class="posts-intro">
+      Notes on design, development, and the work behind the work.
+    </p>
 
-		{
-			tags.length > 0 && (
-				<nav class="tag-filters" aria-label="Filter by tag">
-					{tags.map((tag) => (
-						<a
-							href={`/posts?tag=${tag.slug}`}
-							class:list={["tag-filter", { active: activeTag === tag.slug }]}
-						>
-							{tag.label}
-						</a>
-					))}
-					{activeTag && (
-						<a href="/posts" class="tag-clear" aria-label="Clear filter">
-							Clear
-						</a>
-					)}
-				</nav>
-			)
-		}
-	</section>
+    {
+      tags.length > 0 && (
+        <nav class="tag-filters" aria-label="Filter by tag">
+          {tags.map((tag) => (
+            <a
+              href={`/posts?tag=${tag.slug}`}
+              class:list={["tag-filter", { active: activeTag === tag.slug }]}
+            >
+              {tag.label}
+            </a>
+          ))}
+          {activeTag && (
+            <a href="/posts" class="tag-clear" aria-label="Clear filter">
+              Clear
+            </a>
+          )}
+        </nav>
+      )
+    }
+  </section>
 
-	{
-		postsWithTags.length > 0 ? (
-			<section class="posts">
-				<div class="posts-grid">
-					{postsWithTags.map(({ post, postTags }) => (
-						<PostCard
-							title={post.data.title ?? "Untitled"}
-							excerpt={post.data.excerpt}
-							featuredImage={post.data.featured_image ?? undefined}
-							href={`/posts/${post.id}`}
-							date={post.data.publishedAt ?? undefined}
-							readingTime={getReadingTime(post.data.content)}
-							tags={postTags.map((t) => t.label)}
-							bylines={post.data.bylines ?? []}
-						/>
-					))}
-				</div>
-			</section>
-		) : (
-			<section class="empty-state">
-				{activeTag ? (
-					<>
-						<p>No posts found with this tag.</p>
-						<a href="/posts" class="btn">
-							View all posts
-						</a>
-					</>
-				) : (
-					<>
-						<p>No posts yet. Add your first post in the admin panel.</p>
-						<a href="/_emdash/admin/content/posts/new" class="btn">
-							Add a post
-						</a>
-					</>
-				)}
-			</section>
-		)
-	}
+  {
+    postsWithTags.length > 0 ? (
+      <section class="posts">
+        <div class="posts-grid">
+          {postsWithTags.map(({ post, postTags }) => (
+            <PostCard
+              title={post.data.title ?? "Untitled"}
+              excerpt={post.data.excerpt}
+              featuredImage={post.data.featured_image ?? undefined}
+              href={`/posts/${post.id}`}
+              date={post.data.publishedAt ?? undefined}
+              readingTime={getReadingTime(post.data.content)}
+              tags={postTags.map((t) => t.label)}
+              bylines={post.data.bylines ?? []}
+            />
+          ))}
+        </div>
+      </section>
+    ) : (
+      <section class="empty-state">
+        {activeTag ? (
+          <>
+            <p>No posts found with this tag.</p>
+            <a href="/posts" class="btn">
+              View all posts
+            </a>
+          </>
+        ) : (
+          <>
+            <p>No posts yet. Add your first post in the admin panel.</p>
+            <a href="/_emdash/admin/content/posts/new" class="btn">
+              Add a post
+            </a>
+          </>
+        )}
+      </section>
+    )
+  }
 </Base>
 
 <style>
-	.posts-header {
-		max-width: var(--wide-width);
-		margin: 0 auto;
-		padding: var(--spacing-3xl) var(--spacing-lg) var(--spacing-2xl);
-	}
+  .posts-header {
+    max-width: var(--wide-width);
+    margin: 0 auto;
+    padding: var(--spacing-3xl) var(--spacing-lg) var(--spacing-2xl);
+  }
 
-	.posts-header h1 {
-		font-size: var(--font-size-3xl);
-		margin-bottom: var(--spacing-md);
-	}
+  .posts-header h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-md);
+  }
 
-	.posts-intro {
-		font-size: var(--font-size-lg);
-		color: var(--color-muted);
-		max-width: 600px;
-	}
+  .posts-intro {
+    font-size: var(--font-size-lg);
+    color: var(--color-muted);
+    max-width: 600px;
+  }
 
-	.tag-filters {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--spacing-sm);
-		margin-top: var(--spacing-xl);
-	}
+  .tag-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xl);
+  }
 
-	.tag-filter {
-		display: inline-block;
-		padding: var(--spacing-xs) var(--spacing-md);
-		font-size: var(--font-size-sm);
-		color: var(--color-muted);
-		text-decoration: none;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
-		transition:
-			color var(--transition-fast),
-			border-color var(--transition-fast),
-			background var(--transition-fast);
-	}
+  .tag-filter {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    transition:
+      color var(--transition-fast),
+      border-color var(--transition-fast),
+      background var(--transition-fast);
+  }
 
-	.tag-filter:hover {
-		color: var(--color-text);
-		border-color: var(--color-text);
-	}
+  .tag-filter:hover {
+    color: var(--color-text);
+    border-color: var(--color-text);
+  }
 
-	.tag-filter.active {
-		color: var(--color-bg);
-		background: var(--color-text);
-		border-color: var(--color-text);
-	}
+  .tag-filter.active {
+    color: var(--color-bg);
+    background: var(--color-text);
+    border-color: var(--color-text);
+  }
 
-	.tag-clear {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--spacing-xs);
-		padding: var(--spacing-xs) var(--spacing-md);
-		font-size: var(--font-size-sm);
-		color: var(--color-muted);
-		text-decoration: none;
-		transition: color var(--transition-fast);
-	}
+  .tag-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
 
-	.tag-clear:hover {
-		color: var(--color-text);
-	}
+  .tag-clear:hover {
+    color: var(--color-text);
+  }
 
-	.tag-clear::before {
-		content: "×";
-		font-size: 1.1em;
-	}
+  .tag-clear::before {
+    content: "×";
+    font-size: 1.1em;
+  }
 
-	.posts {
-		max-width: var(--wide-width);
-		margin: 0 auto;
-		padding: 0 var(--spacing-lg) var(--spacing-4xl);
-	}
+  .posts {
+    max-width: var(--wide-width);
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg) var(--spacing-4xl);
+  }
 
-	.posts-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: var(--spacing-2xl);
-	}
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-2xl);
+  }
 
-	.empty-state {
-		text-align: center;
-		padding: var(--spacing-4xl) var(--spacing-lg);
-		color: var(--color-muted);
-	}
+  .empty-state {
+    text-align: center;
+    padding: var(--spacing-4xl) var(--spacing-lg);
+    color: var(--color-muted);
+  }
 
-	.btn {
-		display: inline-block;
-		margin-top: var(--spacing-lg);
-		padding: var(--spacing-sm) var(--spacing-lg);
-		background: var(--color-text);
-		color: var(--color-bg);
-		text-decoration: none;
-		border-radius: var(--radius);
-		font-size: var(--font-size-sm);
-	}
+  .btn {
+    display: inline-block;
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--color-text);
+    color: var(--color-bg);
+    text-decoration: none;
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+  }
 
-	@media (max-width: 900px) {
-		.posts-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-	}
+  @media (max-width: 900px) {
+    .posts-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 
-	@media (max-width: 640px) {
-		.posts-grid {
-			grid-template-columns: 1fr;
-		}
-	}
+  @media (max-width: 640px) {
+    .posts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>

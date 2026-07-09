@@ -11,5 +11,5 @@
     "useCalculatedVersion": false,
     "prereleaseTemplate": "{tag}-{commit}"
   },
-  "ignore": []
+  "ignore": ["sample-emdash-site"]
 }

@@ -1,9 +1,9 @@
 ---
 import {
-	getTerm,
-	getEmDashCollection,
-	getTermsForEntries,
-	decodeSlug,
+  getTerm,
+  getEmDashCollection,
+  getTermsForEntries,
+  decodeSlug,
 } from "emdash";
 import Base from "../../layouts/Base.astro";
 import ProjectCard from "../../components/ProjectCard.astro";
@@ -14,163 +14,166 @@ const slug = decodeSlug(Astro.params.slug);
 const term = slug ? await getTerm("tag", slug) : null;
 
 if (!term) {
-	return Astro.redirect("/404");
+  return Astro.redirect("/404");
 }
 
 const [{ entries: projects }, { entries: posts }] = await Promise.all([
-	getEmDashCollection("projects", {
-		where: { tag: term.slug },
-		orderBy: { published_at: "desc" },
-	}),
-	getEmDashCollection("posts", {
-		where: { tag: term.slug },
-		orderBy: { published_at: "desc" },
-	}),
+  getEmDashCollection("projects", {
+    where: { tag: term.slug },
+    orderBy: { published_at: "desc" },
+  }),
+  getEmDashCollection("posts", {
+    where: { tag: term.slug },
+    orderBy: { published_at: "desc" },
+  }),
 ]);
 
 const [projectTagsByEntry, postTagsByEntry] = await Promise.all([
-	getTermsForEntries(
-		"projects",
-		projects.map((p) => p.data.id),
-		"tag",
-	),
-	getTermsForEntries(
-		"posts",
-		posts.map((p) => p.data.id),
-		"tag",
-	),
+  getTermsForEntries(
+    "projects",
+    projects.map((p) => p.data.id),
+    "tag",
+  ),
+  getTermsForEntries(
+    "posts",
+    posts.map((p) => p.data.id),
+    "tag",
+  ),
 ]);
 
 const projectsWithTags = projects.map((project) => ({
-	project,
-	projectTags: projectTagsByEntry.get(project.data.id) ?? [],
+  project,
+  projectTags: projectTagsByEntry.get(project.data.id) ?? [],
 }));
 const postsWithTags = posts.map((post) => ({
-	post,
-	postTags: postTagsByEntry.get(post.data.id) ?? [],
+  post,
+  postTags: postTagsByEntry.get(post.data.id) ?? [],
 }));
 ---
 
-<Base title={`${term.label} — Tag`} description={`Work and posts tagged with ${term.label}`}>
-	<header class="archive-header">
-		<span class="archive-label">Tag</span>
-		<h1 class="archive-title">{term.label}</h1>
-	</header>
+<Base
+  title={`${term.label} — Tag`}
+  description={`Work and posts tagged with ${term.label}`}
+>
+  <header class="archive-header">
+    <span class="archive-label">Tag</span>
+    <h1 class="archive-title">{term.label}</h1>
+  </header>
 
-	{
-		projectsWithTags.length === 0 && postsWithTags.length === 0 ? (
-			<section class="empty-state">
-				<p>Nothing tagged with this yet.</p>
-			</section>
-		) : (
-			<>
-				{projectsWithTags.length > 0 && (
-					<section class="archive-section">
-						<h2 class="section-title">Projects</h2>
-						<div class="projects-grid">
-							{projectsWithTags.map(({ project, projectTags }) => (
-								<ProjectCard
-									title={project.data.title ?? "Untitled"}
-									summary={project.data.summary}
-									featuredImage={project.data.featured_image ?? ""}
-									href={`/work/${project.id}`}
-									client={project.data.client}
-									year={project.data.year}
-									tags={projectTags.map((t) => t.label)}
-								/>
-							))}
-						</div>
-					</section>
-				)}
+  {
+    projectsWithTags.length === 0 && postsWithTags.length === 0 ? (
+      <section class="empty-state">
+        <p>Nothing tagged with this yet.</p>
+      </section>
+    ) : (
+      <>
+        {projectsWithTags.length > 0 && (
+          <section class="archive-section">
+            <h2 class="section-title">Projects</h2>
+            <div class="projects-grid">
+              {projectsWithTags.map(({ project, projectTags }) => (
+                <ProjectCard
+                  title={project.data.title ?? "Untitled"}
+                  summary={project.data.summary}
+                  featuredImage={project.data.featured_image ?? ""}
+                  href={`/work/${project.id}`}
+                  client={project.data.client}
+                  year={project.data.year}
+                  tags={projectTags.map((t) => t.label)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
-				{postsWithTags.length > 0 && (
-					<section class="archive-section">
-						<h2 class="section-title">Posts</h2>
-						<div class="posts-grid">
-							{postsWithTags.map(({ post, postTags }) => (
-								<PostCard
-									title={post.data.title ?? "Untitled"}
-									excerpt={post.data.excerpt}
-									featuredImage={post.data.featured_image ?? undefined}
-									href={`/posts/${post.id}`}
-									date={post.data.publishedAt ?? undefined}
-									readingTime={getReadingTime(post.data.content)}
-									tags={postTags.map((t) => t.label)}
-									bylines={post.data.bylines ?? []}
-								/>
-							))}
-						</div>
-					</section>
-				)}
-			</>
-		)
-	}
+        {postsWithTags.length > 0 && (
+          <section class="archive-section">
+            <h2 class="section-title">Posts</h2>
+            <div class="posts-grid">
+              {postsWithTags.map(({ post, postTags }) => (
+                <PostCard
+                  title={post.data.title ?? "Untitled"}
+                  excerpt={post.data.excerpt}
+                  featuredImage={post.data.featured_image ?? undefined}
+                  href={`/posts/${post.id}`}
+                  date={post.data.publishedAt ?? undefined}
+                  readingTime={getReadingTime(post.data.content)}
+                  tags={postTags.map((t) => t.label)}
+                  bylines={post.data.bylines ?? []}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </>
+    )
+  }
 </Base>
 
 <style>
-	.archive-header {
-		max-width: var(--wide-width);
-		margin: 0 auto;
-		padding: var(--spacing-3xl) var(--spacing-lg) var(--spacing-xl);
-	}
+  .archive-header {
+    max-width: var(--wide-width);
+    margin: 0 auto;
+    padding: var(--spacing-3xl) var(--spacing-lg) var(--spacing-xl);
+  }
 
-	.archive-label {
-		display: block;
-		font-size: var(--font-size-xs);
-		font-weight: 500;
-		color: var(--color-brand);
-		text-transform: uppercase;
-		letter-spacing: var(--tracking-wider);
-		margin-bottom: var(--spacing-xs);
-	}
+  .archive-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--color-brand);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    margin-bottom: var(--spacing-xs);
+  }
 
-	.archive-title {
-		font-family: var(--font-heading);
-		font-size: var(--font-size-3xl);
-		font-weight: var(--font-weight-display);
-	}
+  .archive-title {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-display);
+  }
 
-	.archive-section {
-		max-width: var(--wide-width);
-		margin: 0 auto;
-		padding: 0 var(--spacing-lg) var(--spacing-3xl);
-	}
+  .archive-section {
+    max-width: var(--wide-width);
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg) var(--spacing-3xl);
+  }
 
-	.section-title {
-		font-family: var(--font-heading);
-		font-size: var(--font-size-xl);
-		font-weight: var(--font-weight-heading);
-		margin-bottom: var(--spacing-xl);
-		padding-bottom: var(--spacing-md);
-		border-bottom: 1px solid var(--color-border-subtle);
-	}
+  .section-title {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-heading);
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
 
-	.projects-grid,
-	.posts-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: var(--spacing-2xl);
-	}
+  .projects-grid,
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-2xl);
+  }
 
-	.empty-state {
-		max-width: var(--wide-width);
-		margin: 0 auto;
-		text-align: center;
-		padding: var(--spacing-4xl) var(--spacing-lg);
-		color: var(--color-muted);
-	}
+  .empty-state {
+    max-width: var(--wide-width);
+    margin: 0 auto;
+    text-align: center;
+    padding: var(--spacing-4xl) var(--spacing-lg);
+    color: var(--color-muted);
+  }
 
-	@media (max-width: 900px) {
-		.projects-grid,
-		.posts-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-	}
+  @media (max-width: 900px) {
+    .projects-grid,
+    .posts-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 
-	@media (max-width: 640px) {
-		.projects-grid,
-		.posts-grid {
-			grid-template-columns: 1fr;
-		}
-	}
+  @media (max-width: 640px) {
+    .projects-grid,
+    .posts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>

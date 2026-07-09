@@ -1,792 +1,792 @@
 {
-	"$schema": "https://emdashcms.com/seed.schema.json",
-	"version": "1",
-	"meta": {
-		"name": "Portfolio Starter",
-		"description": "A portfolio for showcasing creative work",
-		"author": "EmDash"
-	},
-	"settings": {
-		"title": "Studio",
-		"tagline": "Design & Development"
-	},
-	"collections": [
-		{
-			"slug": "projects",
-			"label": "Projects",
-			"labelSingular": "Project",
-			"supports": ["drafts", "revisions", "search", "seo"],
-			"fields": [
-				{
-					"slug": "title",
-					"label": "Title",
-					"type": "string",
-					"required": true,
-					"searchable": true
-				},
-				{
-					"slug": "featured_image",
-					"label": "Featured Image",
-					"type": "image",
-					"required": true
-				},
-				{
-					"slug": "client",
-					"label": "Client",
-					"type": "string"
-				},
-				{
-					"slug": "year",
-					"label": "Year",
-					"type": "string"
-				},
-				{
-					"slug": "summary",
-					"label": "Summary",
-					"type": "text",
-					"searchable": true
-				},
-				{
-					"slug": "content",
-					"label": "Content",
-					"type": "portableText",
-					"searchable": true
-				},
-				{
-					"slug": "gallery",
-					"label": "Gallery",
-					"type": "json"
-				},
-				{
-					"slug": "url",
-					"label": "Project URL",
-					"type": "string"
-				}
-			]
-		},
-		{
-			"slug": "pages",
-			"label": "Pages",
-			"labelSingular": "Page",
-			"supports": ["drafts", "revisions", "search"],
-			"fields": [
-				{
-					"slug": "title",
-					"label": "Title",
-					"type": "string",
-					"required": true,
-					"searchable": true
-				},
-				{
-					"slug": "content",
-					"label": "Content",
-					"type": "portableText",
-					"searchable": true
-				}
-			]
-		},
-		{
-			"slug": "posts",
-			"label": "Posts",
-			"labelSingular": "Post",
-			"supports": ["drafts", "revisions", "search", "seo"],
-			"commentsEnabled": true,
-			"fields": [
-				{
-					"slug": "title",
-					"label": "Title",
-					"type": "string",
-					"required": true,
-					"searchable": true
-				},
-				{
-					"slug": "featured_image",
-					"label": "Featured Image",
-					"type": "image"
-				},
-				{
-					"slug": "excerpt",
-					"label": "Excerpt",
-					"type": "text",
-					"searchable": true
-				},
-				{
-					"slug": "content",
-					"label": "Content",
-					"type": "portableText",
-					"searchable": true
-				}
-			]
-		}
-	],
-	"taxonomies": [
-		{
-			"name": "category",
-			"label": "Categories",
-			"labelSingular": "Category",
-			"hierarchical": false,
-			"collections": ["projects", "posts"],
-			"terms": [
-				{
-					"slug": "branding",
-					"label": "Branding"
-				},
-				{
-					"slug": "web",
-					"label": "Web Design"
-				},
-				{
-					"slug": "print",
-					"label": "Print"
-				},
-				{
-					"slug": "photography",
-					"label": "Photography"
-				}
-			]
-		},
-		{
-			"name": "tag",
-			"label": "Tags",
-			"labelSingular": "Tag",
-			"hierarchical": false,
-			"collections": ["projects", "posts"],
-			"terms": [
-				{
-					"slug": "identity",
-					"label": "Identity"
-				},
-				{
-					"slug": "ui-ux",
-					"label": "UI/UX"
-				},
-				{
-					"slug": "development",
-					"label": "Development"
-				},
-				{
-					"slug": "art-direction",
-					"label": "Art Direction"
-				},
-				{
-					"slug": "packaging",
-					"label": "Packaging"
-				},
-				{
-					"slug": "ecommerce",
-					"label": "E-commerce"
-				},
-				{
-					"slug": "editorial",
-					"label": "Editorial"
-				}
-			]
-		}
-	],
-	"bylines": [
-		{
-			"id": "byline-studio",
-			"slug": "studio",
-			"displayName": "Studio Team"
-		},
-		{
-			"id": "byline-guest",
-			"slug": "guest-contributor",
-			"displayName": "Guest Contributor",
-			"isGuest": true
-		}
-	],
-	"menus": [
-		{
-			"name": "primary",
-			"label": "Primary Navigation",
-			"items": [
-				{
-					"type": "custom",
-					"label": "Work",
-					"url": "/work"
-				},
-				{
-					"type": "custom",
-					"label": "Posts",
-					"url": "/posts"
-				},
-				{
-					"type": "custom",
-					"label": "Search",
-					"url": "/search"
-				},
-				{
-					"type": "custom",
-					"label": "Contact",
-					"url": "/contact"
-				}
-			]
-		}
-	],
-	"widgetAreas": [
-		{
-			"name": "sidebar",
-			"label": "Sidebar",
-			"description": "Widget area displayed on single post pages",
-			"widgets": [
-				{
-					"type": "component",
-					"componentId": "core:search",
-					"title": "Search"
-				},
-				{
-					"type": "component",
-					"componentId": "core:categories",
-					"title": "Categories"
-				},
-				{
-					"type": "component",
-					"componentId": "core:tags",
-					"title": "Tags"
-				},
-				{
-					"type": "component",
-					"componentId": "core:recent-posts",
-					"title": "Recent Posts",
-					"settings": {
-						"count": 5,
-						"showDate": true
-					}
-				},
-				{
-					"type": "component",
-					"componentId": "core:archives",
-					"title": "Archives",
-					"settings": {
-						"type": "monthly",
-						"limit": 6
-					}
-				}
-			]
-		}
-	],
-	"content": {
-		"pages": [
-			{
-				"id": "about",
-				"slug": "about",
-				"status": "published",
-				"data": {
-					"title": "About",
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "We are a small design studio focused on creating meaningful work for thoughtful clients. Founded in 2020, we've had the privilege of working with brands across technology, culture, and the arts.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Our approach is simple: listen carefully, think deeply, and craft with intention. We believe that good design is invisible — it gets out of the way and lets the work speak for itself.",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "What we do",
-									"_key": "k5"
-								}
-							],
-							"_key": "k4"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "We specialize in brand identity, web design, and art direction. Whether you need a complete visual identity or a single website, we bring the same level of care and attention to every project.",
-									"_key": "k7"
-								}
-							],
-							"_key": "k6"
-						}
-					]
-				}
-			}
-		],
-		"projects": [
-			{
-				"id": "meridian-brand",
-				"slug": "meridian-brand",
-				"status": "published",
-				"data": {
-					"title": "Meridian",
-					"client": "Meridian Collective",
-					"year": "2024",
-					"summary": "A complete brand identity for a creative collective bringing together artists and technologists.",
-					"featured_image": {
-						"$media": {
-							"url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=900&fit=crop",
-							"alt": "Meridian cover image",
-							"filename": "photo-1558618666-fcd25c85cd64.jpg"
-						}
-					},
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Meridian Collective needed a visual identity that could bridge the gap between traditional art and emerging technology. The challenge was to create something that felt timeless yet forward-looking.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "The approach",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "We developed a wordmark that combines classical typography with subtle geometric forms. The color palette draws from both digital interfaces and natural materials, creating a bridge between worlds.",
-									"_key": "k5"
-								}
-							],
-							"_key": "k4"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "The result",
-									"_key": "k7"
-								}
-							],
-							"_key": "k6"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "The new identity has been applied across print and digital touchpoints, from business cards to a fully responsive website. Meridian has received positive feedback from both artists and technologists alike.",
-									"_key": "k9"
-								}
-							],
-							"_key": "k8"
-						}
-					]
-				},
-				"taxonomies": {
-					"category": ["branding"],
-					"tag": ["identity", "art-direction"]
-				}
-			},
-			{
-				"id": "volta-web",
-				"slug": "volta-web",
-				"status": "published",
-				"data": {
-					"title": "Volta",
-					"client": "Volta Energy",
-					"year": "2024",
-					"summary": "Website design for a renewable energy startup making clean power accessible to everyone.",
-					"featured_image": {
-						"$media": {
-							"url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=900&fit=crop",
-							"alt": "Volta cover image",
-							"filename": "photo-1497366216548-37526070297c.jpg"
-						}
-					},
-					"url": "https://volta.example.com",
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Volta is on a mission to make renewable energy accessible to everyone. They needed a website that could explain complex technology simply while inspiring trust in potential customers.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Design principles",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "We focused on clarity and warmth. The design uses generous whitespace and a vibrant green accent that evokes growth and sustainability without feeling clichéd.",
-									"_key": "k5"
-								}
-							],
-							"_key": "k4"
-						}
-					]
-				},
-				"taxonomies": {
-					"category": ["web"],
-					"tag": ["ui-ux", "development"]
-				}
-			},
-			{
-				"id": "archive-print",
-				"slug": "archive-print",
-				"status": "published",
-				"data": {
-					"title": "The Archive",
-					"client": "City Museum",
-					"year": "2023",
-					"summary": "Exhibition catalog and print materials for a retrospective on modernist architecture.",
-					"featured_image": {
-						"$media": {
-							"url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=900&fit=crop",
-							"alt": "The Archive cover image",
-							"filename": "photo-1507003211169-0a1dd7228f2d.jpg"
-						}
-					},
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "The Archive was a major exhibition at the City Museum, showcasing 50 years of modernist architecture through photographs, drawings, and models. We designed the complete print identity.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "The catalog",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "The 240-page catalog uses a strict grid system inspired by the work being exhibited. Full-bleed photography alternates with dense text spreads, creating a rhythm that echoes the exhibition layout.",
-									"_key": "k5"
-								}
-							],
-							"_key": "k4"
-						}
-					]
-				},
-				"taxonomies": {
-					"category": ["print"],
-					"tag": ["editorial", "art-direction"]
-				}
-			},
-			{
-				"id": "coastal-photo",
-				"slug": "coastal-photo",
-				"status": "published",
-				"data": {
-					"title": "Coastal",
-					"client": "Personal Project",
-					"year": "2023",
-					"summary": "A photographic study of the Pacific coastline, exploring the intersection of land, sea, and sky.",
-					"featured_image": {
-						"$media": {
-							"url": "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1200&h=900&fit=crop",
-							"alt": "Coastal cover image",
-							"filename": "photo-1505142468610-359e7d316be0.jpg"
-						}
-					},
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Coastal began as a weekend project and grew into a year-long exploration of the Pacific shoreline. Shot entirely on medium format film, the series captures the quiet drama of the coast.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Process",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Each image was made at dawn or dusk, when the light is softest and the beaches are empty. The slow process of shooting film encourages patience and intentionality — qualities that show in the final work.",
-									"_key": "k5"
-								}
-							],
-							"_key": "k4"
-						}
-					]
-				},
-				"taxonomies": {
-					"category": ["photography"],
-					"tag": ["art-direction", "editorial"]
-				}
-			}
-		],
-		"posts": [
-			{
-				"id": "designing-with-restraint",
-				"slug": "designing-with-restraint",
-				"status": "published",
-				"data": {
-					"title": "Designing with Restraint",
-					"excerpt": "The best design decisions are often the ones you don't make. A few notes on knowing when to stop.",
-					"featured_image": {
-						"$media": {
-							"url": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&h=800&fit=crop",
-							"alt": "A minimal, uncluttered desk workspace",
-							"filename": "designing-with-restraint.jpg"
-						}
-					},
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Every project has a moment where the temptation to add one more flourish becomes almost irresistible. Another color, another animation, another clever interaction. Most of the time, the work is better off without it.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Subtraction as a skill",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "We spend a lot of energy teaching ourselves to add — more detail, more polish, more feedback states. Learning to subtract is harder because it requires trusting that simplicity communicates just as much as decoration, often more.",
-									"_key": "k5"
-								}
-							],
-							"_key": "k4"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "On every project we ask the same question before shipping: what happens if we remove this? If the answer is \"nothing important,\" it goes.",
-									"_key": "k7"
-								}
-							],
-							"_key": "k6"
-						}
-					]
-				},
-				"bylines": [{ "byline": "byline-studio" }],
-				"taxonomies": {
-					"category": ["branding"],
-					"tag": ["identity", "art-direction"]
-				}
-			},
-			{
-				"id": "notes-on-client-collaboration",
-				"slug": "notes-on-client-collaboration",
-				"status": "published",
-				"data": {
-					"title": "Notes on Client Collaboration",
-					"excerpt": "Good client work isn't about pleasing everyone in the room. It's about building enough trust to disagree productively.",
-					"featured_image": {
-						"$media": {
-							"url": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=800&fit=crop",
-							"alt": "A team reviewing design work at a table",
-							"filename": "notes-on-client-collaboration.jpg"
-						}
-					},
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Early in a project, the instinct is to say yes to everything. It feels collaborative, agreeable, easy. It also produces work with no point of view.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "h2",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Trust before craft",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Clients don't hire us for craft alone — plenty of studios can produce clean work. What they're really buying is a point of view they can trust when the room disagrees.",
-									"_key": "k5"
-								}
-							],
-							"_key": "k4"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "That trust has to be built before it's tested, which is why the first few weeks of any engagement matter more than they get credit for.",
-									"_key": "k7"
-								}
-							],
-							"_key": "k6"
-						}
-					]
-				},
-				"bylines": [
-					{ "byline": "byline-studio" },
-					{ "byline": "byline-guest", "roleLabel": "Guest essay" }
-				],
-				"taxonomies": {
-					"category": ["web"],
-					"tag": ["ui-ux", "development"]
-				}
-			},
-			{
-				"id": "the-quiet-value-of-print",
-				"slug": "the-quiet-value-of-print",
-				"status": "published",
-				"data": {
-					"title": "The Quiet Value of Print",
-					"excerpt": "In a screen-first world, print work still teaches lessons that don't translate any other way.",
-					"featured_image": {
-						"$media": {
-							"url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1200&h=800&fit=crop",
-							"alt": "Stacks of printed material on a table",
-							"filename": "the-quiet-value-of-print.jpg"
-						}
-					},
-					"content": [
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "Print work forces decisions that screens let you defer. There's no responsive breakpoint to fall back on, no hover state to hide behind. Every choice is final the moment it goes to press.",
-									"_key": "k1"
-								}
-							],
-							"_key": "k0"
-						},
-						{
-							"_type": "block",
-							"style": "normal",
-							"children": [
-								{
-									"_type": "span",
-									"text": "We still take on print projects for exactly this reason. The constraints sharpen judgment that carries back into everything else we make, screens included.",
-									"_key": "k3"
-								}
-							],
-							"_key": "k2"
-						}
-					]
-				},
-				"bylines": [{ "byline": "byline-studio" }],
-				"taxonomies": {
-					"category": ["print"],
-					"tag": ["editorial", "art-direction"]
-				}
-			}
-		]
-	}
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "meta": {
+    "name": "Portfolio Starter",
+    "description": "A portfolio for showcasing creative work",
+    "author": "EmDash"
+  },
+  "settings": {
+    "title": "Studio",
+    "tagline": "Design & Development"
+  },
+  "collections": [
+    {
+      "slug": "projects",
+      "label": "Projects",
+      "labelSingular": "Project",
+      "supports": ["drafts", "revisions", "search", "seo"],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Title",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "featured_image",
+          "label": "Featured Image",
+          "type": "image",
+          "required": true
+        },
+        {
+          "slug": "client",
+          "label": "Client",
+          "type": "string"
+        },
+        {
+          "slug": "year",
+          "label": "Year",
+          "type": "string"
+        },
+        {
+          "slug": "summary",
+          "label": "Summary",
+          "type": "text",
+          "searchable": true
+        },
+        {
+          "slug": "content",
+          "label": "Content",
+          "type": "portableText",
+          "searchable": true
+        },
+        {
+          "slug": "gallery",
+          "label": "Gallery",
+          "type": "json"
+        },
+        {
+          "slug": "url",
+          "label": "Project URL",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "slug": "pages",
+      "label": "Pages",
+      "labelSingular": "Page",
+      "supports": ["drafts", "revisions", "search"],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Title",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "content",
+          "label": "Content",
+          "type": "portableText",
+          "searchable": true
+        }
+      ]
+    },
+    {
+      "slug": "posts",
+      "label": "Posts",
+      "labelSingular": "Post",
+      "supports": ["drafts", "revisions", "search", "seo"],
+      "commentsEnabled": true,
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Title",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "featured_image",
+          "label": "Featured Image",
+          "type": "image"
+        },
+        {
+          "slug": "excerpt",
+          "label": "Excerpt",
+          "type": "text",
+          "searchable": true
+        },
+        {
+          "slug": "content",
+          "label": "Content",
+          "type": "portableText",
+          "searchable": true
+        }
+      ]
+    }
+  ],
+  "taxonomies": [
+    {
+      "name": "category",
+      "label": "Categories",
+      "labelSingular": "Category",
+      "hierarchical": false,
+      "collections": ["projects", "posts"],
+      "terms": [
+        {
+          "slug": "branding",
+          "label": "Branding"
+        },
+        {
+          "slug": "web",
+          "label": "Web Design"
+        },
+        {
+          "slug": "print",
+          "label": "Print"
+        },
+        {
+          "slug": "photography",
+          "label": "Photography"
+        }
+      ]
+    },
+    {
+      "name": "tag",
+      "label": "Tags",
+      "labelSingular": "Tag",
+      "hierarchical": false,
+      "collections": ["projects", "posts"],
+      "terms": [
+        {
+          "slug": "identity",
+          "label": "Identity"
+        },
+        {
+          "slug": "ui-ux",
+          "label": "UI/UX"
+        },
+        {
+          "slug": "development",
+          "label": "Development"
+        },
+        {
+          "slug": "art-direction",
+          "label": "Art Direction"
+        },
+        {
+          "slug": "packaging",
+          "label": "Packaging"
+        },
+        {
+          "slug": "ecommerce",
+          "label": "E-commerce"
+        },
+        {
+          "slug": "editorial",
+          "label": "Editorial"
+        }
+      ]
+    }
+  ],
+  "bylines": [
+    {
+      "id": "byline-studio",
+      "slug": "studio",
+      "displayName": "Studio Team"
+    },
+    {
+      "id": "byline-guest",
+      "slug": "guest-contributor",
+      "displayName": "Guest Contributor",
+      "isGuest": true
+    }
+  ],
+  "menus": [
+    {
+      "name": "primary",
+      "label": "Primary Navigation",
+      "items": [
+        {
+          "type": "custom",
+          "label": "Work",
+          "url": "/work"
+        },
+        {
+          "type": "custom",
+          "label": "Posts",
+          "url": "/posts"
+        },
+        {
+          "type": "custom",
+          "label": "Search",
+          "url": "/search"
+        },
+        {
+          "type": "custom",
+          "label": "Contact",
+          "url": "/contact"
+        }
+      ]
+    }
+  ],
+  "widgetAreas": [
+    {
+      "name": "sidebar",
+      "label": "Sidebar",
+      "description": "Widget area displayed on single post pages",
+      "widgets": [
+        {
+          "type": "component",
+          "componentId": "core:search",
+          "title": "Search"
+        },
+        {
+          "type": "component",
+          "componentId": "core:categories",
+          "title": "Categories"
+        },
+        {
+          "type": "component",
+          "componentId": "core:tags",
+          "title": "Tags"
+        },
+        {
+          "type": "component",
+          "componentId": "core:recent-posts",
+          "title": "Recent Posts",
+          "settings": {
+            "count": 5,
+            "showDate": true
+          }
+        },
+        {
+          "type": "component",
+          "componentId": "core:archives",
+          "title": "Archives",
+          "settings": {
+            "type": "monthly",
+            "limit": 6
+          }
+        }
+      ]
+    }
+  ],
+  "content": {
+    "pages": [
+      {
+        "id": "about",
+        "slug": "about",
+        "status": "published",
+        "data": {
+          "title": "About",
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "We are a small design studio focused on creating meaningful work for thoughtful clients. Founded in 2020, we've had the privilege of working with brands across technology, culture, and the arts.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Our approach is simple: listen carefully, think deeply, and craft with intention. We believe that good design is invisible — it gets out of the way and lets the work speak for itself.",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "What we do",
+                  "_key": "k5"
+                }
+              ],
+              "_key": "k4"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "We specialize in brand identity, web design, and art direction. Whether you need a complete visual identity or a single website, we bring the same level of care and attention to every project.",
+                  "_key": "k7"
+                }
+              ],
+              "_key": "k6"
+            }
+          ]
+        }
+      }
+    ],
+    "projects": [
+      {
+        "id": "meridian-brand",
+        "slug": "meridian-brand",
+        "status": "published",
+        "data": {
+          "title": "Meridian",
+          "client": "Meridian Collective",
+          "year": "2024",
+          "summary": "A complete brand identity for a creative collective bringing together artists and technologists.",
+          "featured_image": {
+            "$media": {
+              "url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=900&fit=crop",
+              "alt": "Meridian cover image",
+              "filename": "photo-1558618666-fcd25c85cd64.jpg"
+            }
+          },
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Meridian Collective needed a visual identity that could bridge the gap between traditional art and emerging technology. The challenge was to create something that felt timeless yet forward-looking.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "The approach",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "We developed a wordmark that combines classical typography with subtle geometric forms. The color palette draws from both digital interfaces and natural materials, creating a bridge between worlds.",
+                  "_key": "k5"
+                }
+              ],
+              "_key": "k4"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "The result",
+                  "_key": "k7"
+                }
+              ],
+              "_key": "k6"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "The new identity has been applied across print and digital touchpoints, from business cards to a fully responsive website. Meridian has received positive feedback from both artists and technologists alike.",
+                  "_key": "k9"
+                }
+              ],
+              "_key": "k8"
+            }
+          ]
+        },
+        "taxonomies": {
+          "category": ["branding"],
+          "tag": ["identity", "art-direction"]
+        }
+      },
+      {
+        "id": "volta-web",
+        "slug": "volta-web",
+        "status": "published",
+        "data": {
+          "title": "Volta",
+          "client": "Volta Energy",
+          "year": "2024",
+          "summary": "Website design for a renewable energy startup making clean power accessible to everyone.",
+          "featured_image": {
+            "$media": {
+              "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=900&fit=crop",
+              "alt": "Volta cover image",
+              "filename": "photo-1497366216548-37526070297c.jpg"
+            }
+          },
+          "url": "https://volta.example.com",
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Volta is on a mission to make renewable energy accessible to everyone. They needed a website that could explain complex technology simply while inspiring trust in potential customers.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Design principles",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "We focused on clarity and warmth. The design uses generous whitespace and a vibrant green accent that evokes growth and sustainability without feeling clichéd.",
+                  "_key": "k5"
+                }
+              ],
+              "_key": "k4"
+            }
+          ]
+        },
+        "taxonomies": {
+          "category": ["web"],
+          "tag": ["ui-ux", "development"]
+        }
+      },
+      {
+        "id": "archive-print",
+        "slug": "archive-print",
+        "status": "published",
+        "data": {
+          "title": "The Archive",
+          "client": "City Museum",
+          "year": "2023",
+          "summary": "Exhibition catalog and print materials for a retrospective on modernist architecture.",
+          "featured_image": {
+            "$media": {
+              "url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=900&fit=crop",
+              "alt": "The Archive cover image",
+              "filename": "photo-1507003211169-0a1dd7228f2d.jpg"
+            }
+          },
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "The Archive was a major exhibition at the City Museum, showcasing 50 years of modernist architecture through photographs, drawings, and models. We designed the complete print identity.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "The catalog",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "The 240-page catalog uses a strict grid system inspired by the work being exhibited. Full-bleed photography alternates with dense text spreads, creating a rhythm that echoes the exhibition layout.",
+                  "_key": "k5"
+                }
+              ],
+              "_key": "k4"
+            }
+          ]
+        },
+        "taxonomies": {
+          "category": ["print"],
+          "tag": ["editorial", "art-direction"]
+        }
+      },
+      {
+        "id": "coastal-photo",
+        "slug": "coastal-photo",
+        "status": "published",
+        "data": {
+          "title": "Coastal",
+          "client": "Personal Project",
+          "year": "2023",
+          "summary": "A photographic study of the Pacific coastline, exploring the intersection of land, sea, and sky.",
+          "featured_image": {
+            "$media": {
+              "url": "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1200&h=900&fit=crop",
+              "alt": "Coastal cover image",
+              "filename": "photo-1505142468610-359e7d316be0.jpg"
+            }
+          },
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Coastal began as a weekend project and grew into a year-long exploration of the Pacific shoreline. Shot entirely on medium format film, the series captures the quiet drama of the coast.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Process",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Each image was made at dawn or dusk, when the light is softest and the beaches are empty. The slow process of shooting film encourages patience and intentionality — qualities that show in the final work.",
+                  "_key": "k5"
+                }
+              ],
+              "_key": "k4"
+            }
+          ]
+        },
+        "taxonomies": {
+          "category": ["photography"],
+          "tag": ["art-direction", "editorial"]
+        }
+      }
+    ],
+    "posts": [
+      {
+        "id": "designing-with-restraint",
+        "slug": "designing-with-restraint",
+        "status": "published",
+        "data": {
+          "title": "Designing with Restraint",
+          "excerpt": "The best design decisions are often the ones you don't make. A few notes on knowing when to stop.",
+          "featured_image": {
+            "$media": {
+              "url": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&h=800&fit=crop",
+              "alt": "A minimal, uncluttered desk workspace",
+              "filename": "designing-with-restraint.jpg"
+            }
+          },
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Every project has a moment where the temptation to add one more flourish becomes almost irresistible. Another color, another animation, another clever interaction. Most of the time, the work is better off without it.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Subtraction as a skill",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "We spend a lot of energy teaching ourselves to add — more detail, more polish, more feedback states. Learning to subtract is harder because it requires trusting that simplicity communicates just as much as decoration, often more.",
+                  "_key": "k5"
+                }
+              ],
+              "_key": "k4"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "On every project we ask the same question before shipping: what happens if we remove this? If the answer is \"nothing important,\" it goes.",
+                  "_key": "k7"
+                }
+              ],
+              "_key": "k6"
+            }
+          ]
+        },
+        "bylines": [{ "byline": "byline-studio" }],
+        "taxonomies": {
+          "category": ["branding"],
+          "tag": ["identity", "art-direction"]
+        }
+      },
+      {
+        "id": "notes-on-client-collaboration",
+        "slug": "notes-on-client-collaboration",
+        "status": "published",
+        "data": {
+          "title": "Notes on Client Collaboration",
+          "excerpt": "Good client work isn't about pleasing everyone in the room. It's about building enough trust to disagree productively.",
+          "featured_image": {
+            "$media": {
+              "url": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=800&fit=crop",
+              "alt": "A team reviewing design work at a table",
+              "filename": "notes-on-client-collaboration.jpg"
+            }
+          },
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Early in a project, the instinct is to say yes to everything. It feels collaborative, agreeable, easy. It also produces work with no point of view.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "h2",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Trust before craft",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Clients don't hire us for craft alone — plenty of studios can produce clean work. What they're really buying is a point of view they can trust when the room disagrees.",
+                  "_key": "k5"
+                }
+              ],
+              "_key": "k4"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "That trust has to be built before it's tested, which is why the first few weeks of any engagement matter more than they get credit for.",
+                  "_key": "k7"
+                }
+              ],
+              "_key": "k6"
+            }
+          ]
+        },
+        "bylines": [
+          { "byline": "byline-studio" },
+          { "byline": "byline-guest", "roleLabel": "Guest essay" }
+        ],
+        "taxonomies": {
+          "category": ["web"],
+          "tag": ["ui-ux", "development"]
+        }
+      },
+      {
+        "id": "the-quiet-value-of-print",
+        "slug": "the-quiet-value-of-print",
+        "status": "published",
+        "data": {
+          "title": "The Quiet Value of Print",
+          "excerpt": "In a screen-first world, print work still teaches lessons that don't translate any other way.",
+          "featured_image": {
+            "$media": {
+              "url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1200&h=800&fit=crop",
+              "alt": "Stacks of printed material on a table",
+              "filename": "the-quiet-value-of-print.jpg"
+            }
+          },
+          "content": [
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "Print work forces decisions that screens let you defer. There's no responsive breakpoint to fall back on, no hover state to hide behind. Every choice is final the moment it goes to press.",
+                  "_key": "k1"
+                }
+              ],
+              "_key": "k0"
+            },
+            {
+              "_type": "block",
+              "style": "normal",
+              "children": [
+                {
+                  "_type": "span",
+                  "text": "We still take on print projects for exactly this reason. The constraints sharpen judgment that carries back into everything else we make, screens included.",
+                  "_key": "k3"
+                }
+              ],
+              "_key": "k2"
+            }
+          ]
+        },
+        "bylines": [{ "byline": "byline-studio" }],
+        "taxonomies": {
+          "category": ["print"],
+          "tag": ["editorial", "art-direction"]
+        }
+      }
+    ]
+  }
 }

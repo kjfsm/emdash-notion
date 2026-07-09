@@ -13,7 +13,11 @@ const icon = node.kind === "database" ? "🗄️" : "📋";
 ---
 
 <!-- Notion API はリンク先タイトル・emdash 上の URL を返さないため、リンクにはせずカード表示のみ行う。 -->
-<div class="notion-link-to-page" data-notion-target-id={node.targetId} data-notion-kind={node.kind}>
+<div
+  class="notion-link-to-page"
+  data-notion-target-id={node.targetId}
+  data-notion-kind={node.kind}
+>
   <span class="notion-link-to-page__icon" aria-hidden="true">{icon}</span>
   <span class="notion-link-to-page__title">{node.title ?? node.targetId}</span>
 </div>

@@ -2,8 +2,11 @@
   "$schema": "./node_modules/@emdash-cms/plugin-cli/schemas/emdash-plugin.schema.json",
 
   "slug": "notion-sync",
-  // TODO: set your atproto handle (e.g. "example.com") or DID before running `emdash-plugin bundle` or any local-dev integration. The plugin cannot load without it.
-  "publisher": "",
+  // TODO: replace with your real atproto handle (e.g. "example.com") or DID before running
+  // `emdash-plugin bundle`/`publish`. "local-dev.test" is a placeholder that only satisfies
+  // `emdash-plugin build`'s manifest validation for local development — it is NOT a real
+  // publisher and must never be used for an actual marketplace release.
+  "publisher": "local-dev.test",
 
   "license": "MIT",
   "author": { "name": "kjfsm", "email": "kjfsm@users.noreply.github.com" },
