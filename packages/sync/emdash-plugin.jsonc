@@ -2,13 +2,11 @@
   "$schema": "./node_modules/@emdash-cms/plugin-cli/schemas/emdash-plugin.schema.json",
 
   "slug": "notion-sync",
-  // TODO: set your atproto handle (e.g. "example.com") or DID before running `emdash-plugin bundle` or any local-dev integration. The plugin cannot load without it.
-  "publisher": "",
+  "publisher": "did:plc:eenyklkiibu2bondaj2spe67",
 
   "license": "MIT",
   "author": { "name": "kjfsm", "email": "kjfsm@users.noreply.github.com" },
-  // TODO: replace the placeholder with a real security contact email or url before publishing. The lexicon mandates at least one.
-  "security": { "email": "TODO@example.com" },
+  "security": { "url": "https://github.com/kjfsm/emdash-notion/security/advisories/new" },
 
   "name": "notion-sync",
   "description": "Sync Notion pages into EmDash CMS as Portable Text via webhooks (Notion → EmDash, one-way).",
