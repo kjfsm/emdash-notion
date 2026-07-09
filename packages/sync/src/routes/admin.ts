@@ -41,6 +41,7 @@ import { fetchNotionStructure, type NotionStructure } from "./notion-options.js"
  */
 
 const SAVE_CONNECTION_ACTION_ID = "save_connection";
+const SAVE_WEBHOOK_ACTION_ID = "save_webhook";
 const GENERATE_TOKEN_ACTION_ID = "generate_webhook_token";
 const FETCH_STRUCTURE_ACTION_ID = "fetch_structure";
 const MANUAL_SYNC_ACTION_ID = "manual_sync";
@@ -83,13 +84,23 @@ function connectionFormBlock(
       elements.secretInput("notionToken", m.notionTokenLabel, {
         placeholder: config.notionToken ? m.notionTokenSetPlaceholder : m.notionTokenNewPlaceholder,
       }),
+    ],
+    submit: { label: m.saveConnection, actionId: SAVE_CONNECTION_ACTION_ID },
+  });
+}
+
+/** Webhook トークンだけを扱う独立フォーム。任意設定であることが分かるよう接続フォームから分離する。 */
+function webhookFormBlock(config: Awaited<ReturnType<typeof loadConfig>>, m: Messages): Block {
+  return blocks.form({
+    blockId: "webhook",
+    fields: [
       elements.secretInput("webhookToken", m.webhookTokenLabel, {
         placeholder: config.webhookToken
           ? m.webhookTokenSetPlaceholder
           : m.webhookTokenNewPlaceholder,
       }),
     ],
-    submit: { label: m.saveConnection, actionId: SAVE_CONNECTION_ACTION_ID },
+    submit: { label: m.saveWebhook, actionId: SAVE_WEBHOOK_ACTION_ID },
   });
 }
 
@@ -104,6 +115,22 @@ function tokenGeneratedBlocks(webhookUrl: string, m: Messages): Block[] {
 /** `OptionItem[]` を `elements.select()` の options 形式へ変換する。 */
 function toSelectOptions(items: OptionItem[]): Array<{ label: string; value: string }> {
   return items.map((item) => ({ label: item.name, value: item.id }));
+}
+
+/**
+ * 選択済みデータベースの表示名を「DB名のみ」に解決する（一覧の select 自体は
+ * 同名DBを区別するため引き続き `"DB名 (id)"` 形式のままにする — 見出し・概要表示側で解決する）。
+ */
+function resolveDatabaseName(
+  databaseId: string,
+  notionDatabases: OptionItem[],
+  m: Messages,
+): string {
+  if (!databaseId) return m.mappingDatabaseUnset;
+  const match = notionDatabases.find((item) => item.id === databaseId);
+  if (!match) return databaseId;
+  const suffix = ` (${databaseId})`;
+  return match.name.endsWith(suffix) ? match.name.slice(0, -suffix.length) : match.name;
 }
 
 /**
@@ -199,25 +226,62 @@ function mappingFormBlocks(
   return result;
 }
 
+function mappingSummaryLabel(
+  mapping: NotionMapping,
+  m: Messages,
+  notionDatabases: OptionItem[],
+): string {
+  return m.mappingSummary(
+    mapping.collection || m.mappingCollectionUnset,
+    resolveDatabaseName(mapping.databaseId, notionDatabases, m),
+  );
+}
+
+/**
+ * 既存の対応は折りたたみ（`accordion`）にまとめ、新規追加用フォームもクリックするまで
+ * 空欄を表示しない `accordion` にする。`accordion` の開閉はクライアント側のみで完結する
+ * （ラウンドトリップ不要）ため、`page_load` では常に全て閉じた状態から始まる。
+ * `openMappingKey` は `save_mapping_*` 成功直後の再描画でのみ渡され、保存したばかりの
+ * 対応だけ開いたままにする（渡さなければ全て閉じる）。
+ */
 function mappingsSection(
   mappings: NotionMapping[],
   m: Messages,
   notionDatabases: OptionItem[],
   notionProperties: OptionItem[],
+  openMappingKey?: number | typeof NEW_MAPPING_KEY,
 ): Block[] {
   const result: Block[] = [blocks.header(m.mappingsHeader), blocks.context(m.mappingsHelp)];
 
   if (notionDatabases.length === 0) result.push(blocks.context(m.structureNotFetchedHint));
 
+  if (mappings.length > 0) {
+    result.push(
+      blocks.fields(
+        mappings.map((mapping) => ({
+          label: mapping.collection || m.mappingCollectionUnset,
+          value: resolveDatabaseName(mapping.databaseId, notionDatabases, m),
+        })),
+      ),
+    );
+  }
+
   mappings.forEach((mapping, index) => {
-    result.push(blocks.context(m.mappingLabel(index, mapping.collection)));
-    result.push(...mappingFormBlocks(mapping, index, m, notionDatabases, notionProperties));
-    result.push(blocks.divider());
+    result.push(
+      blocks.accordion({
+        label: mappingSummaryLabel(mapping, m, notionDatabases),
+        blocks: mappingFormBlocks(mapping, index, m, notionDatabases, notionProperties),
+        defaultOpen: openMappingKey === index,
+      }),
+    );
   });
 
-  result.push(blocks.context(m.addNewMapping));
   result.push(
-    ...mappingFormBlocks(undefined, NEW_MAPPING_KEY, m, notionDatabases, notionProperties),
+    blocks.accordion({
+      label: m.addNewMapping,
+      blocks: mappingFormBlocks(undefined, NEW_MAPPING_KEY, m, notionDatabases, notionProperties),
+      defaultOpen: openMappingKey === NEW_MAPPING_KEY,
+    }),
   );
 
   return result;
@@ -270,29 +334,46 @@ async function buildBlocks(
   syncResult?: BulkSyncResult,
   structureBanner?: Block,
   tokenGeneratedUrl?: string,
+  openMappingKey?: number | typeof NEW_MAPPING_KEY,
 ): Promise<Block[]> {
   const config = await loadConfig(ctx);
 
   const result: Block[] = [
     blocks.header(m.pageTitle),
     blocks.context(m.pageIntro),
+
+    blocks.header(m.connectionHeader),
     connectionFormBlock(config, m, locale),
+    blocks.divider(),
+
+    blocks.header(m.webhookHeader),
+    blocks.context(m.webhookExplain),
+    webhookFormBlock(config, m),
     blocks.context(m.webhookTokenHelp),
     blocks.actions([elements.button(GENERATE_TOKEN_ACTION_ID, m.generateTokenButton)]),
     blocks.context(m.generateTokenHelp),
     ...(tokenGeneratedUrl ? tokenGeneratedBlocks(tokenGeneratedUrl, m) : []),
+    blocks.divider(),
+
     blocks.actions([elements.button(FETCH_STRUCTURE_ACTION_ID, m.fetchStructureButton)]),
     blocks.context(m.fetchStructureHelp),
+    ...(structureBanner ? [structureBanner] : []),
     blocks.divider(),
-    ...mappingsSection(config.mappings, m, config.notionDatabases, config.notionProperties),
-    blocks.divider(),
+
     blocks.section(m.manualSyncSection, {
       accessory: elements.button(MANUAL_SYNC_ACTION_ID, m.manualSync, { style: "primary" }),
     }),
-  ];
+    ...(syncResult ? [syncResultBanner(syncResult, m)] : []),
+    blocks.divider(),
 
-  if (syncResult) result.push(syncResultBanner(syncResult, m));
-  if (structureBanner) result.push(structureBanner);
+    ...mappingsSection(
+      config.mappings,
+      m,
+      config.notionDatabases,
+      config.notionProperties,
+      openMappingKey,
+    ),
+  ];
 
   return result;
 }
@@ -313,12 +394,13 @@ function sanitizeMapping(raw: Record<string, unknown>): NotionMapping {
 
 /**
  * Block Kit の設定ページ。
- * - `connection` フォーム: 表示言語とトークンを保存
+ * - `connection` フォーム: 表示言語と Notion トークンを保存
+ * - `webhook` フォーム: Webhook トークン（任意・自動同期用）を保存。生成ボタンでランダム値を発行できる
  * - Notionの構造を取得するボタン: Notion 側のデータベース/プロパティを取得して kv に保存し、
  *   `databaseId`/`authorProperty`/`slugProperty` の選択肢を更新する（結果は banner で必ず表示）
- * - 対応ごとの `mapping-<index>` フォーム: 既存の対応関係を編集・削除
- * - `mapping-new` フォーム: 新しい対応関係を追加
- * - 手動取得ボタン: 保存済みの全対応関係を一括同期
+ * - 手動取得ボタン: 保存済みの全対応関係を一括同期（マッピングセクションより上に配置）
+ * - 対応ごとの `mapping-<index>` フォーム: `accordion` で折りたたみ、既存の対応関係を編集・削除
+ * - `mapping-new` フォーム: 同じく `accordion`（既定で閉じる）に包み、クリックするまで空欄を出さない
  */
 export async function handleAdmin(
   routeCtx: SandboxedRouteContext,
@@ -330,7 +412,6 @@ export async function handleAdmin(
 
   if (interaction?.type === "form_submit" && interaction.action_id === SAVE_CONNECTION_ACTION_ID) {
     const notionToken = interaction.values.notionToken;
-    const webhookToken = interaction.values.webhookToken;
     const selectedLocale = interaction.values.locale;
     // 表示言語は選択されていれば保存し、応答ブロックも新しい言語で描画する。
     if (isLocale(selectedLocale) && selectedLocale !== locale) {
@@ -341,11 +422,20 @@ export async function handleAdmin(
     // 空欄は「変更しない」として扱い、既存値を保持する。
     if (typeof notionToken === "string" && notionToken !== "")
       await ctx.kv.set(CONFIG_KEYS.notionToken, notionToken);
+    return {
+      blocks: await buildBlocks(ctx, m, locale),
+      toast: { message: m.tokenSaved, type: "success" },
+    };
+  }
+
+  if (interaction?.type === "form_submit" && interaction.action_id === SAVE_WEBHOOK_ACTION_ID) {
+    const webhookToken = interaction.values.webhookToken;
+    // 空欄は「変更しない」として扱い、既存値を保持する。
     if (typeof webhookToken === "string" && webhookToken !== "")
       await ctx.kv.set(CONFIG_KEYS.webhookToken, webhookToken);
     return {
       blocks: await buildBlocks(ctx, m, locale),
-      toast: { message: m.tokenSaved, type: "success" },
+      toast: { message: m.webhookSaved, type: "success" },
     };
   }
 
@@ -366,18 +456,23 @@ export async function handleAdmin(
     const config = await loadConfig(ctx);
     const mapping = sanitizeMapping(interaction.values);
     const mappings = [...config.mappings];
+    // 保存直後の再描画で、保存したばかりの対応のアコーディオンだけ開いたままにする。
+    let openMappingKey: number | typeof NEW_MAPPING_KEY = NEW_MAPPING_KEY;
 
     if (key === NEW_MAPPING_KEY) {
       mappings.push(mapping);
+      openMappingKey = mappings.length - 1;
     } else {
       const index = Number(key);
-      if (Number.isInteger(index) && index >= 0 && index < mappings.length)
+      if (Number.isInteger(index) && index >= 0 && index < mappings.length) {
         mappings[index] = mapping;
+        openMappingKey = index;
+      }
     }
 
     await ctx.kv.set(CONFIG_KEYS.mappings, mappings);
     return {
-      blocks: await buildBlocks(ctx, m, locale),
+      blocks: await buildBlocks(ctx, m, locale, undefined, undefined, undefined, openMappingKey),
       toast: {
         message: key === NEW_MAPPING_KEY ? m.mappingAdded : m.mappingSaved,
         type: "success",

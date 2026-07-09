@@ -19,19 +19,41 @@ function mappingValues(overrides: Record<string, unknown> = {}) {
 
 describe("handleAdmin", () => {
   it("save_connection: 空欄でないトークンだけ保存し、空欄は変更しない", async () => {
-    const t = createTestContext({ kv: { "settings:webhookToken": "existing" } });
+    const t = createTestContext({ kv: {} });
     const routeCtx = withRoute(
       t.ctx,
       {
         type: "form_submit",
         action_id: "save_connection",
-        values: { notionToken: "secret_new", webhookToken: "" },
+        values: { notionToken: "secret_new" },
       },
       "https://x/admin",
     );
     await handleAdmin(...routeCtx);
     expect(t.kv.get("settings:notionToken")).toBe("secret_new");
+  });
+
+  it("save_webhook: 空欄でないトークンだけ保存し、空欄は変更しない", async () => {
+    const t = createTestContext({ kv: { "settings:webhookToken": "existing" } });
+    const routeCtx = withRoute(
+      t.ctx,
+      { type: "form_submit", action_id: "save_webhook", values: { webhookToken: "" } },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(...routeCtx);
     expect(t.kv.get("settings:webhookToken")).toBe("existing");
+    expect(res.toast?.type).toBe("success");
+  });
+
+  it("save_webhook: 新しいトークンを保存する", async () => {
+    const t = createTestContext({ kv: {} });
+    const routeCtx = withRoute(
+      t.ctx,
+      { type: "form_submit", action_id: "save_webhook", values: { webhookToken: "new-secret" } },
+      "https://x/admin",
+    );
+    await handleAdmin(...routeCtx);
+    expect(t.kv.get("settings:webhookToken")).toBe("new-secret");
   });
 
   it("save_mapping_new: 新しい対応を末尾に追加する", async () => {
@@ -111,6 +133,31 @@ describe("handleAdmin", () => {
     const res = await handleAdmin(...routeCtx);
     const types = JSON.stringify(res.blocks);
     expect(types).not.toContain('"repeater"');
+  });
+
+  it("page_load: 新規マッピング用フォームは既定で閉じたアコーディオンに包まれる", async () => {
+    const t = createTestContext({ kv: {} });
+    const routeCtx = withRoute(t.ctx, { type: "page_load", page: "/" }, "https://x/admin");
+    const res = await handleAdmin(...routeCtx);
+    const blocksJson = JSON.stringify(res.blocks);
+    expect(blocksJson).toContain('"type":"accordion"');
+    expect(blocksJson).toContain('"default_open":false');
+  });
+
+  it("save_mapping_new: 保存直後は追加した対応のアコーディオンだけ開いた状態で返す", async () => {
+    const t = createTestContext({ kv: {} });
+    const routeCtx = withRoute(
+      t.ctx,
+      { type: "form_submit", action_id: "save_mapping_new", values: mappingValues() },
+      "https://x/admin",
+    );
+    const res = await handleAdmin(...routeCtx);
+    const blocksJson = JSON.stringify(res.blocks);
+    expect(blocksJson).toContain('"default_open":true');
+    const accordion = (res.blocks as unknown as Array<Record<string, unknown>>).find(
+      (b) => b.type === "accordion" && b.default_open === true,
+    ) as { label: string } | undefined;
+    expect(accordion?.label).toBe("posts ⇔ db1");
   });
 
   it("fetch_structure: トークン未保存ならエラー banner を返し kv は変化しない", async () => {
