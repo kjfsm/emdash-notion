@@ -37,12 +37,31 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile --prefer-offline
+      # pending changeset が無い push（= Version Packages PR のマージ）を検出する。
+      # WHY: 誤った想定だった旧コメントは「pending changeset が 0 件なら version:snapshot は
+      # 何もバンプせず、release:snapshot も publish 対象なしで no-op 終了する (安全)」だったが、
+      # 実際には pending changeset が 0 件でも version:snapshot は package.json の「正式な」
+      # バージョン（例 0.3.1）をそのまま素通りさせ、release:snapshot がそれを canary タグで
+      # publish してしまう。すると正式なバージョン番号が registry に「存在する」扱いになり、
+      # 以後 release-stable.yml の `changeset publish`（正式 latest 公開）が
+      # 「既に公開済み」と判断して恒久的に no-op になる（2026-07-10 実際に発生・確認、
+      # 詳細は CLAUDE.md の確認済みの技術メモ参照）。pending changeset が無い push では
+      # canary ジョブ自体を丸ごとスキップし、正式公開は release-stable.yml だけに委ねる。
+      - name: pending changeset の有無を確認
+        id: changesets
+        run: |
+          if find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' | grep -q .; then
+            echo "has_pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_pending=false" >> "$GITHUB_OUTPUT"
+          fi
       # publish 時に dist が必要なので build する。typecheck / test は CI で通過済み前提
       - run: pnpm build
-      # pending changeset が 0 件なら version:snapshot は何もバンプせず、
-      # 後続の release:snapshot も publish 対象なしで no-op 終了する (安全)
+        if: steps.changesets.outputs.has_pending == 'true'
       - run: pnpm version:snapshot
+        if: steps.changesets.outputs.has_pending == 'true'
       - name: canary タグで npm 公開
+        if: steps.changesets.outputs.has_pending == 'true'
         run: pnpm release:snapshot
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

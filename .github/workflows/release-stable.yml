@@ -57,5 +57,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # actions/setup-node が生成する .npmrc の _authToken 変数展開はこの変数名を見る。
+          # NPM_TOKEN だけでは展開されず未認証になり、scoped package への publish が
+          # （401/403 ではなく）E404 として失敗する（2026-07-10 確認、詳細は CLAUDE.md 参照）。
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           # npm provenance を有効化（permissions.id-token: write と連動）
           NPM_CONFIG_PROVENANCE: "true"
