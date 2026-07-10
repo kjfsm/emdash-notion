@@ -6,7 +6,8 @@ name: Release Canary
 #
 # - pending changeset を消費・削除しない (次の正式リリース判断のためにそのまま残す)
 # - Version PR も git tag も作らないため RELEASE_PAT は不要 (default token で足りる)
-# - 正式な latest リリースは release-stable.yml (workflow_dispatch) に分離した
+# - 「Version Packages」PR の作成/更新と正式な latest 公開は release-stable.yml が担う
+#   (同じ main push で並走し、feature マージ時は canary 公開と Version PR 作成が同時に起きる)
 on:
   push:
     branches:

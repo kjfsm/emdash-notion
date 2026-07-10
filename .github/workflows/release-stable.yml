@@ -1,16 +1,17 @@
 name: Release Stable
 
-# 正式な latest リリース。日常の main 追従は release.yml (canary) が自動で担うため、
-# こちらは routine では発火せず、メンテナが意図したタイミングでのみ動かす。
+# 正式な latest リリースと「Version Packages」PR の自動管理を担う。
 #
-# 運用手順:
-#   1. workflow_dispatch で起動する。pending changeset があれば
-#      changesets/action が「Version Packages」PR を作成する。
-#   2. その PR をレビュー・マージする (通常の PR マージ、追加操作は不要)。
-#   3. マージ push のコミットメッセージが "Version Packages" で始まるため、
-#      下記 push トリガーの if 条件にマッチしてこのワークフローが再度走り、
-#      pending changeset が 0 件になっているため changesets/action が
-#      `pnpm release` (= changeset publish, latest タグ) を実行する。
+# main への push のたびに changesets/action を走らせ、その二段構えの挙動を利用する:
+#   - pending changeset があるとき (= 通常の feature マージ後):
+#       「Version Packages」PR を作成 / 更新するだけで publish はしない。
+#       同じ push で release.yml (canary) が snapshot を公開するため、
+#       feature マージ時に「canary 公開」と「バージョンアップ PR 作成」が同時に起きる。
+#   - pending changeset が 0 件のとき (= その Version PR をマージした後):
+#       `pnpm release` (changeset publish, latest タグ) を実行して正式公開する。
+#       このとき canary (release.yml) はバンプ対象が無いため no-op で終わる。
+#
+# workflow_dispatch は手動で再実行したいときのフォールバックとして残す。
 on:
   workflow_dispatch:
   push:
@@ -29,11 +30,6 @@ permissions:
 
 jobs:
   release:
-    # push イベントでは "Version Packages" マージ push でのみ動かす。
-    # 通常の feature マージ push はここで弾かれ、canary (release.yml) だけが走る。
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      startsWith(github.event.head_commit.message, 'Version Packages')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -52,6 +48,8 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       # publish 時に dist が必要なので build する。typecheck / test は CI で通過済み前提
       - run: pnpm build
+      # pending changeset があれば Version PR を作成 / 更新し、0 件なら pnpm release で latest 公開する。
+      # changesets/action がこの分岐を自動判定するため、if での push 種別の絞り込みは不要。
       - name: バージョン更新PRの作成 または npm 公開
         uses: changesets/action@v1
         with:
