@@ -3,6 +3,13 @@
     "emdash-docs": {
       "type": "http",
       "url": "https://docs.emdashcms.com/mcp"
+    },
+    "emdash-site-local": {
+      "type": "http",
+      "url": "http://127.0.0.1:4321/_emdash/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${EMDASH_LOCAL_PAT}"
+      }
     }
   }
 }
