@@ -1,5 +1,16 @@
 # @emdash-notion/sync
 
+## 0.3.1
+
+### Patch Changes
+
+- 0f0af9e: 挙動を変えない内部リファクタで重複を削減。
+
+  - blocks: 4 コンポーネントで重複していた PortableText ブロックラッパー生成を新しい `@emdash-notion/blocks/portable-text-block`（`toTextBlock`）へ共通化し、descriptor/definition で id を共有定数化。
+  - sync: `plainText()` / 画像・ファイル resolver（`fetchAndUpload`）/ mapping デフォルト適用（`applyMappingDefaults`）/ ページング cursor（`nextCursor`）/ エラー整形（`errMessage`）/ メディア URL 抽出（`mediaUrl`）を共通化し、重複型（`OptionItem`・`SyncCounts`↔`BulkSyncResult`・`OgpData`↔`og`）を統合、未使用の `escapeAttr` を削除、`ctx.content` の冗長な non-null assertion を整理。
+
+- d46f375: 管理画面（Block Kit）のレイアウトを整理。Webhook トークンを接続フォームから分離して「任意・自動同期 vs 手動取得」の説明を追加、マッピング一覧をアコーディオン化して新規追加フォームをクリックするまで空欄を表示しないようにし、手動同期ボタンをマッピングセクションより上に移動。マッピングの見出し・概要にも Notion Database 名（id なし）を表示するようにした。
+
 ## 0.3.0
 
 ### Minor Changes
