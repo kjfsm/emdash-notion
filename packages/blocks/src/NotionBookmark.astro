@@ -1,6 +1,7 @@
 ---
 import { PortableText } from "emdash/ui";
 
+import { toTextBlock } from "@emdash-notion/blocks/portable-text-block";
 import { safeHref, safeImageSrc } from "@emdash-notion/blocks/safe-url";
 
 export interface Props {
@@ -21,13 +22,7 @@ export interface Props {
 
 const { node } = Astro.props;
 const captionBlock = node.caption
-  ? {
-      _type: "block" as const,
-      _key: `${node._key}-caption`,
-      style: "normal",
-      children: node.caption,
-      markDefs: node.markDefs ?? [],
-    }
+  ? toTextBlock(`${node._key}-caption`, node.caption, node.markDefs ?? [])
   : null;
 
 // Notion 由来 URL は javascript: 等の危険スキームを弾く。安全でなければリンクにしない。

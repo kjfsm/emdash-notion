@@ -158,6 +158,14 @@ export interface NotionEquationBlock {
  * fetch 失敗時は og が undefined になり、url/caption だけの簡易表示にフォールバックする。
  * （embed は emdash 標準の `PortableTextEmbedBlock` へ変換するためこの型の対象外。）
  */
+export interface OgpData {
+  title?: string;
+  description?: string;
+  /** OGP 画像は長期間有効な CDN URL であることが多いため resolveImage には通さず URL のまま保持する。 */
+  image?: string;
+  siteName?: string;
+}
+
 export interface NotionBookmarkBlock {
   _type: "notionBookmark";
   _key: string;
@@ -165,13 +173,7 @@ export interface NotionBookmarkBlock {
   url: string;
   caption?: PortableTextSpan[];
   markDefs?: PortableTextMarkDef[];
-  og?: {
-    title?: string;
-    description?: string;
-    /** OGP 画像は長期間有効な CDN URL であることが多いため resolveImage には通さず URL のまま保持する。 */
-    image?: string;
-    siteName?: string;
-  };
+  og?: OgpData;
 }
 
 /** Notion の table_of_contents ブロック。見出し一覧の実生成はサイト側 CSS/JS に委ねる。 */

@@ -9,15 +9,6 @@ const HTML_ESCAPE_MAP: Record<string, string> = {
   "'": "&#39;",
 };
 
-function escape(value: string): string {
-  return value.replace(HTML_ESCAPE_RE, (ch) => HTML_ESCAPE_MAP[ch] ?? ch);
-}
-
 export function escapeHtml(value: string): string {
-  return escape(value);
-}
-
-/** 属性値エスケープ（ダブルクォートで囲む前提）。 */
-export function escapeAttr(value: string): string {
-  return escape(value);
+  return value.replace(HTML_ESCAPE_RE, (ch) => HTML_ESCAPE_MAP[ch] ?? ch);
 }

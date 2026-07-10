@@ -1,4 +1,5 @@
-import type { NotionPage, NotionProperty, NotionRichText } from "./types.js";
+import { plainText } from "./plain-text.js";
+import type { NotionPage, NotionProperty } from "./types.js";
 
 export interface MappedProperties {
   title: string;
@@ -63,8 +64,4 @@ function extractPublished(properties: Record<string, NotionProperty>): boolean {
     }
   }
   return false;
-}
-
-function plainText(richText: NotionRichText[]): string {
-  return richText.map((rt) => rt.plain_text).join("");
 }

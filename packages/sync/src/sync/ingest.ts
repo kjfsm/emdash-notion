@@ -7,6 +7,7 @@ import { NotionApiError, NotionClient } from "../notion/client.js";
 import { fetchPage } from "../notion/fetch-page.js";
 import { mapProperties } from "../notion/properties.js";
 import { notionBlocksToPortableText } from "../portable-text/from-notion.js";
+import { errMessage } from "../util.js";
 import { deleteSyncedPage } from "./delete.js";
 import { stableHash } from "./hash.js";
 import { deleteMapping, getMapping, putMapping } from "./sync-map.js";
@@ -32,6 +33,7 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
   if (!ctx.content?.create || !ctx.content.update) {
     return { status: "skipped", reason: "content:write capability unavailable" };
   }
+  const content = ctx.content;
 
   const client = new NotionClient(ctx.http, config.notionToken);
   const fallbackCollections = config.mappings.map((m) => m.collection);
@@ -108,7 +110,7 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
   // なら通常の update 扱いにする。
   let existing = existingRaw;
   if (existingRaw?.deletedAt) {
-    const alive = await ctx.content!.get!(mapping.collection, existingRaw.emdashId);
+    const alive = await content.get!(mapping.collection, existingRaw.emdashId);
     existing = alive ? existingRaw : null;
   }
 
@@ -155,9 +157,8 @@ export async function ingestPage(ctx: PluginContext, pageId: string): Promise<In
   let result: { id: string };
   try {
     const write = existing
-      ? (d: Record<string, unknown>) =>
-          ctx.content!.update!(mapping.collection, existing.emdashId, d)
-      : (d: Record<string, unknown>) => ctx.content!.create!(mapping.collection, d);
+      ? (d: Record<string, unknown>) => content.update!(mapping.collection, existing.emdashId, d)
+      : (d: Record<string, unknown>) => content.create!(mapping.collection, d);
     result = await writeContent(write, data, optionalFields, ctx, pageId);
   } catch (err) {
     if (!existing) {
@@ -218,7 +219,7 @@ async function writeContent(
     try {
       return await write({ ...baseData, ...remaining });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errMessage(err);
       const captured = message.match(MISSING_COLUMN_RE)?.[1];
       // 修飾名（"t.slug"）はそのままでは remaining のキー（"slug"）と一致しないため、
       // 修飾子を落とした末尾のカラム名でも突き合わせる。

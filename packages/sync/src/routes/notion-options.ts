@@ -3,7 +3,9 @@ import type { PluginContext } from "emdash";
 import type { OptionItem } from "../config.js";
 import { loadConfig } from "../config.js";
 import { NotionClient } from "../notion/client.js";
+import { nextCursor } from "../notion/paging.js";
 import type { NotionDatabase } from "../notion/types.js";
+import { errMessage } from "../util.js";
 
 export interface NotionStructure {
   databases: OptionItem[];
@@ -46,7 +48,7 @@ export async function fetchNotionStructure(ctx: PluginContext): Promise<NotionSt
           if (prop.type === "rich_text" || prop.type === "title") propertyNames.add(name);
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = errMessage(err);
         errors.push(`${label}: ${message}`);
         ctx.log.warn("fetch-structure: failed to inspect database", {
           databaseId: db.id,
@@ -54,7 +56,7 @@ export async function fetchNotionStructure(ctx: PluginContext): Promise<NotionSt
         });
       }
     }
-    cursor = page.has_more && page.next_cursor ? page.next_cursor : undefined;
+    cursor = nextCursor(page);
   } while (cursor);
 
   return {

@@ -1,24 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { handleWebhook } from "../src/routes/webhook.js";
-import { createTestContext, makeNotionHttp, withRoute } from "./helpers.js";
+import { createTestContext, makeNotionHttp, makeRichText, withRoute } from "./helpers.js";
 
 function richText(text: string) {
-  return [
-    {
-      type: "text" as const,
-      plain_text: text,
-      href: null,
-      annotations: {
-        bold: false,
-        italic: false,
-        strikethrough: false,
-        underline: false,
-        code: false,
-        color: "default",
-      },
-    },
-  ];
+  return [makeRichText(text)];
 }
 
 function notionPage(lastEdited: string) {

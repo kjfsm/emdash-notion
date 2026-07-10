@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { syncAll } from "../src/sync/bulk.js";
-import { createTestContext } from "./helpers.js";
+import { createTestContext, makeRichText } from "./helpers.js";
 
 function notionPage(id: string, databaseId: string, title: string) {
   return {
@@ -12,25 +12,7 @@ function notionPage(id: string, databaseId: string, title: string) {
     archived: false,
     parent: { type: "data_source_id", data_source_id: databaseId },
     properties: {
-      Name: {
-        id: "title",
-        type: "title",
-        title: [
-          {
-            type: "text",
-            plain_text: title,
-            href: null,
-            annotations: {
-              bold: false,
-              italic: false,
-              strikethrough: false,
-              underline: false,
-              code: false,
-              color: "default",
-            },
-          },
-        ],
-      },
+      Name: { id: "title", type: "title", title: [makeRichText(title)] },
     },
   };
 }

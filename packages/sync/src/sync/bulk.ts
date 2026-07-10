@@ -1,23 +1,15 @@
 import type { PluginContext } from "emdash";
 
 import { isConfigReady, loadConfig } from "../config.js";
-import { defaultLocale, getMessages, type Messages } from "../i18n/index.js";
+import { defaultLocale, getMessages, type Messages, type SyncCounts } from "../i18n/index.js";
 import { NotionApiError, NotionClient } from "../notion/client.js";
+import { nextCursor } from "../notion/paging.js";
+import { errMessage } from "../util.js";
 import { deleteSyncedPage } from "./delete.js";
 import { ingestPage } from "./ingest.js";
 import { iterateMappings } from "./sync-map.js";
 
-export interface BulkSyncResult {
-  total: number;
-  created: number;
-  updated: number;
-  unchanged: number;
-  skipped: number;
-  failed: number;
-  /** 予算超過で本文末尾が欠落したまま保存されたページ数。 */
-  truncated: number;
-  /** Notion 側で削除・アーカイブされ、emdash 側をゴミ箱へ移したページ数。 */
-  deleted: number;
+export interface BulkSyncResult extends SyncCounts {
   errors: string[];
 }
 
@@ -86,9 +78,7 @@ export async function syncAll(
             if (outcome.truncated) result.truncated++;
           } catch (err) {
             result.failed++;
-            result.errors.push(
-              `${notionPage.id}: ${err instanceof Error ? err.message : String(err)}`,
-            );
+            result.errors.push(`${notionPage.id}: ${errMessage(err)}`);
             ctx.log.warn("manual sync: page ingest failed", {
               pageId: notionPage.id,
               error: String(err),
@@ -96,7 +86,7 @@ export async function syncAll(
           }
         }
 
-        cursor = page.has_more && page.next_cursor ? page.next_cursor : undefined;
+        cursor = nextCursor(page);
       } while (cursor);
     } catch (err) {
       result.failed++;
@@ -147,7 +137,7 @@ async function reconcileDeletions(
         if (outcome.status === "deleted") result.deleted++;
         continue;
       }
-      result.errors.push(`${record.id}: ${err instanceof Error ? err.message : String(err)}`);
+      result.errors.push(`${record.id}: ${errMessage(err)}`);
       ctx.log.warn("manual sync: reconciliation check failed", {
         pageId: record.id,
         error: String(err),

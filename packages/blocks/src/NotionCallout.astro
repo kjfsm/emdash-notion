@@ -2,6 +2,7 @@
 import { PortableText } from "emdash/ui";
 
 import { notionBlockColorVars } from "@emdash-notion/blocks/notion-color";
+import { toTextBlock } from "@emdash-notion/blocks/portable-text-block";
 import { safeImageSrc } from "@emdash-notion/blocks/safe-url";
 
 export interface Props {
@@ -22,13 +23,11 @@ const { node } = Astro.props;
 const { accent, background } = notionBlockColorVars(node.color);
 // Notion 由来のアイコン URL は http(s) のみ許可（javascript: 等を弾く）。
 const iconSrc = safeImageSrc(node.icon?.url);
-const textBlock = {
-  _type: "block" as const,
-  _key: `${node._key}-text`,
-  style: "normal",
-  children: node.children,
-  markDefs: node.markDefs,
-};
+const textBlock = toTextBlock(
+  `${node._key}-text`,
+  node.children,
+  node.markDefs,
+);
 ---
 
 <aside

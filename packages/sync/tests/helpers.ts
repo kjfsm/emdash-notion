@@ -1,6 +1,45 @@
 import type { PluginContext } from "emdash";
 import type { SandboxedRouteContext } from "emdash/plugin";
 
+import type { NotionAnnotations, NotionRichText } from "../src/notion/types.js";
+
+/** Notion rich_text の annotations 既定値（全 false・color=default）。overrides で個別に上書きする。 */
+export function defaultAnnotations(overrides: Partial<NotionAnnotations> = {}): NotionAnnotations {
+  return {
+    bold: false,
+    italic: false,
+    strikethrough: false,
+    underline: false,
+    code: false,
+    color: "default",
+    ...overrides,
+  };
+}
+
+/** テスト用の Notion rich_text スパンを作る。annotation の上書きと href を opts で指定する。 */
+export function makeRichText(
+  text: string,
+  opts: Partial<NotionAnnotations> & { href?: string | null } = {},
+): NotionRichText {
+  const { href = null, ...annotations } = opts;
+  return { type: "text", plain_text: text, href, annotations: defaultAnnotations(annotations) };
+}
+
+/** emdash content レコードの最小形状（get/create/update が返す 10 フィールド）。 */
+function makeContentRecord(id: string, collection: string, data: Record<string, unknown>) {
+  return {
+    id,
+    type: collection,
+    slug: null,
+    status: "draft",
+    data,
+    locale: "en",
+    createdAt: "",
+    updatedAt: "",
+    publishedAt: null,
+  };
+}
+
 /** Map で裏打ちした最小 StorageCollection。テストで必要なメソッドのみ実装する。 */
 export function mapStorage() {
   const store = new Map<string, unknown>();
@@ -82,48 +121,18 @@ export function createTestContext(options: TestContextOptions = {}): TestContext
       get: async (collection: string, id: string) => {
         const data = options.onGet?.(collection, id);
         if (!data) return null;
-        return {
-          id,
-          type: collection,
-          slug: null,
-          status: "draft",
-          data,
-          locale: "en",
-          createdAt: "",
-          updatedAt: "",
-          publishedAt: null,
-        };
+        return makeContentRecord(id, collection, data);
       },
       list: async () => ({ items: [], hasMore: false }),
       create: async (collection: string, data: Record<string, unknown>) => {
         const item = options.onCreate?.(collection, data) ?? { id: `content_${++idSeq}` };
         created.push({ collection, data });
-        return {
-          id: item.id,
-          type: collection,
-          slug: null,
-          status: "draft",
-          data,
-          locale: "en",
-          createdAt: "",
-          updatedAt: "",
-          publishedAt: null,
-        };
+        return makeContentRecord(item.id, collection, data);
       },
       update: async (collection: string, id: string, data: Record<string, unknown>) => {
         options.onUpdate?.(collection, id, data);
         updated.push({ collection, id, data });
-        return {
-          id,
-          type: collection,
-          slug: null,
-          status: "draft",
-          data,
-          locale: "en",
-          createdAt: "",
-          updatedAt: "",
-          publishedAt: null,
-        };
+        return makeContentRecord(id, collection, data);
       },
       delete: async (collection: string, id: string) => {
         options.onDelete?.(collection, id);

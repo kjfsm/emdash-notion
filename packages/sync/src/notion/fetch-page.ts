@@ -1,4 +1,5 @@
 import type { NotionClient } from "./client.js";
+import { nextCursor } from "./paging.js";
 import type { NotionBlock, NotionPage } from "./types.js";
 
 export interface FetchedPage {
@@ -66,7 +67,7 @@ async function fetchBlockTree(
     budget.remaining--;
     const res = await client.listBlockChildren(blockId, cursor);
     collected.push(...res.results);
-    cursor = res.has_more && res.next_cursor ? res.next_cursor : undefined;
+    cursor = nextCursor(res);
   } while (cursor);
 
   for (const block of collected) {

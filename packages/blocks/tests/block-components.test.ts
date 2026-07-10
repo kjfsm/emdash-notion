@@ -36,21 +36,6 @@ describe("NotionBookmark の caption ラッパー", () => {
   });
 });
 
-describe("NotionBookmark の caption ラッパー", () => {
-  // PortableText の normal ブロックは <p> を出力するため、caption を <p> で包むと
-  // <p> の入れ子（無効な HTML）になる。callout/todo と同じ <div> ラップ方式を強制する。
-  it("caption を <p> ではなく <div> で包む", () => {
-    const src = readFileSync(
-      fileURLToPath(new URL("../src/NotionBookmark.astro", import.meta.url)),
-      "utf8",
-    );
-    expect(src).not.toContain('<p class="notion-bookmark__caption"');
-    expect(src).toContain('<div class="notion-bookmark__caption"');
-    // 内側の <p> の margin をリセットしないと caption の余白が二重になる。
-    expect(src).toMatch(/\.notion-bookmark__caption :global\(p\)/);
-  });
-});
-
 describe("blockComponents ↔ portableTextBlocks の網羅", () => {
   it("portableTextBlocks で宣言した全 _type に描画コンポーネントが登録されている", () => {
     const declared = createPlugin().admin!.portableTextBlocks!.map((b) => b.type);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { NotionBlock, NotionRichText } from "../src/notion/types.js";
+import type { NotionBlock } from "../src/notion/types.js";
 import { notionBlocksToPortableText } from "../src/portable-text/from-notion.js";
 import type {
   NotionBookmarkBlock,
@@ -20,22 +20,7 @@ import type {
   PortableTextImage,
   PortableTextTableBlock,
 } from "../src/portable-text/types.js";
-
-function rt(text: string, opts: { bold?: boolean; href?: string } = {}): NotionRichText {
-  return {
-    type: "text",
-    plain_text: text,
-    href: opts.href ?? null,
-    annotations: {
-      bold: opts.bold ?? false,
-      italic: false,
-      strikethrough: false,
-      underline: false,
-      code: false,
-      color: "default",
-    },
-  };
-}
+import { makeRichText as rt } from "./helpers.js";
 
 function block(id: string, type: string, payload: unknown, children?: NotionBlock[]): NotionBlock {
   return { object: "block", id, type, has_children: !!children, [type]: payload, children };

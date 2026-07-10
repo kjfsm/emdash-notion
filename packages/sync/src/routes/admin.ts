@@ -9,6 +9,7 @@ import type { PluginContext } from "emdash";
 import type { SandboxedRouteContext } from "emdash/plugin";
 
 import {
+  applyMappingDefaults,
   CONFIG_KEYS,
   DEFAULT_AUTHOR_FIELD,
   DEFAULT_AUTHOR_PROPERTY,
@@ -379,17 +380,9 @@ async function buildBlocks(
 }
 
 function sanitizeMapping(raw: Record<string, unknown>): NotionMapping {
-  const str = (key: string) => (typeof raw[key] === "string" ? (raw[key] as string).trim() : "");
-  return {
-    collection: str("collection"),
-    databaseId: str("databaseId"),
-    titleField: str("titleField") || DEFAULT_TITLE_FIELD,
-    bodyField: str("bodyField") || DEFAULT_BODY_FIELD,
-    authorProperty: str("authorProperty") || DEFAULT_AUTHOR_PROPERTY,
-    authorField: str("authorField"),
-    slugProperty: str("slugProperty") || DEFAULT_SLUG_PROPERTY,
-    slugField: str("slugField"),
-  };
+  return applyMappingDefaults((key) =>
+    typeof raw[key] === "string" ? (raw[key] as string).trim() : "",
+  );
 }
 
 /**
