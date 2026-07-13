@@ -63,7 +63,7 @@
   "devDependencies": {
     "@emdash-cms/blocks": ">=0.28.1",
     "@emdash-cms/plugin-cli": "^0.6.0",
-    "@notionhq/client": "^2.2.15",
+    "@notionhq/client": "^5.23.0",
     "emdash": ">=0.28.1"
   },
   "peerDependencies": {

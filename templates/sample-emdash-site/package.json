@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",
-    "@cloudflare/workers-types": "^4.20260305.1",
+    "@cloudflare/workers-types": "^5.20260712.1",
     "wrangler": "^4.99.0"
   },
   "emdash": {
