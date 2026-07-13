@@ -61,13 +61,13 @@
     "release:local": "npm publish --no-provenance"
   },
   "devDependencies": {
-    "@emdash-cms/blocks": ">=0.28.1",
-    "@emdash-cms/plugin-cli": "^0.6.0",
+    "@emdash-cms/blocks": ">=0.29.0",
+    "@emdash-cms/plugin-cli": "^0.7.0",
     "@notionhq/client": "^2.2.15",
-    "emdash": ">=0.28.1"
+    "emdash": ">=0.29.0"
   },
   "peerDependencies": {
-    "emdash": ">=0.28.1"
+    "emdash": ">=0.29.0"
   },
   "engines": {
     "node": ">=20"

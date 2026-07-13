@@ -11,20 +11,20 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.0.0",
+    "@astrojs/cloudflare": "^14.1.2",
     "@astrojs/react": "^6.0.0",
     "@emdash-cms/cloudflare": "catalog:",
     "@emdash-notion/blocks": "workspace:*",
     "@emdash-notion/sync": "workspace:*",
-    "astro": "^7.0.0",
+    "astro": "^7.0.7",
     "emdash": "catalog:",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",
     "@cloudflare/workers-types": "^4.20260305.1",
-    "wrangler": "^4.99.0"
+    "wrangler": "^4.110.0"
   },
   "emdash": {
     "label": "Portfolio",
