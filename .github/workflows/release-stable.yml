@@ -40,7 +40,7 @@ jobs:
           # 公式: https://github.com/changesets/action#with-publishing
           token: ${{ secrets.RELEASE_PAT }}
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
