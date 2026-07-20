@@ -31,7 +31,7 @@ jobs:
           # snapshot バージョン名の {commit} 解決に必要
           fetch-depth: 0
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
