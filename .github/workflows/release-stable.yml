@@ -40,7 +40,7 @@ jobs:
           # 公式: https://github.com/changesets/action#with-publishing
           token: ${{ secrets.RELEASE_PAT }}
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
@@ -51,7 +51,7 @@ jobs:
       # pending changeset があれば Version PR を作成 / 更新し、0 件なら pnpm release で latest 公開する。
       # changesets/action がこの分岐を自動判定するため、if での push 種別の絞り込みは不要。
       - name: バージョン更新PRの作成 または npm 公開
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
           publish: "pnpm release"
         env:
