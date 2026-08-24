@@ -74,10 +74,10 @@
   },
   "devDependencies": {
     "@emdash-notion/sync": "workspace:*",
-    "emdash": ">=0.28.1"
+    "emdash": ">=0.34.0"
   },
   "peerDependencies": {
-    "emdash": ">=0.28.1"
+    "emdash": ">=0.34.0"
   },
   "engines": {
     "node": ">=20"
