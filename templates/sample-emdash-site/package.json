@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.0.0",
-    "@astrojs/react": "^6.0.0",
+    "@astrojs/react": "^7.0.0",
     "@emdash-cms/cloudflare": "catalog:",
     "@emdash-notion/blocks": "workspace:*",
     "@emdash-notion/sync": "workspace:*",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",
-    "@cloudflare/workers-types": "^4.20260305.1",
+    "@cloudflare/workers-types": "^5.20261001.1",
     "wrangler": "^4.99.0"
   },
   "emdash": {
